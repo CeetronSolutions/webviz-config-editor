@@ -40,7 +40,7 @@
     "scripts": {
         "predeploy": "npm run build",
         "deploy": "gh-pages -d build",
-        "start": "webpack serve --mode development --devtool inline-source-map --entry ./src/demo/index.tsx --open",
+        "start": "webpack serve --mode development --devtool inline-source-map --entry ./src/index.tsx --open",
         "build": "webpack --mode production --entry ./src/demo/index.tsx",
         "build:npm": "tsc --declaration && npm run copy-files",
         "copy-files": "copyfiles -u 2 ./src/lib/**/*.svg ./src/lib/**/**/*.svg ./src/lib/**/*.css ./src/lib/**/**/*.css ./dist/",

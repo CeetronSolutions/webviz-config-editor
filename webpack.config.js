@@ -115,7 +115,7 @@ module.exports = (env, argv) => {
                     },
                 ],
             }),
-            new webpack.IgnorePlugin(/(fs|child_process)/),
+            new webpack.IgnorePlugin({ resourceRegExp: /(fs|child_process)/ }),
         ],
         optimization: {
             minimizer: [

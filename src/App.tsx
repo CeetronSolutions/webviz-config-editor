@@ -6,9 +6,14 @@
  */
 
 import React from "react";
+import { MainWindow } from "./lib/MainWindow";
 
 function App(): JSX.Element {
-    return <React.StrictMode>This is where the app is going to be.</React.StrictMode>;
+    return (
+        <React.StrictMode>
+            <MainWindow></MainWindow>
+        </React.StrictMode>
+    );
 }
 
 export default App;
