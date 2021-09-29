@@ -29,10 +29,13 @@
         "@equinor/eds-icons": "^0.6.2",
         "@material-ui/core": "^4.11.4",
         "@material-ui/icons": "^4.11.2",
+        "@react-hook/size": "^2.1.2",
+        "ace-builds": "^1.4.12",
         "clsx": "^1.1.1",
         "dayjs": "^1.10.5",
         "process": "^0.11.10",
         "react": "^17.0.2",
+        "react-ace": "^9.4.4",
         "react-content-loader": "^6.0.3",
         "react-dom": "^17.0.2",
         "styled-components": "^5.3.0"

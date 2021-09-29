@@ -6,7 +6,9 @@
  */
 
 import React from "react";
-import { MainWindow } from "./lib/MainWindow";
+import { MainWindow } from "./lib/components/MainWindow";
+
+import "./App.css";
 
 function App(): JSX.Element {
     return (

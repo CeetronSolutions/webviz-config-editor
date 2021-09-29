@@ -1,0 +1,23 @@
+.MenuBar {
+    z-index: 11;
+}
+.TabMenu {
+    width: 80px;
+    position: fixed;
+    left: 0;
+    top: 64px;
+    border-right: 1px #ccc solid;
+    height: 100vh;
+    z-index: 10;
+}
+
+.TabMenu .MuiTab-root {
+    min-width: 80px;
+}
+
+.Content {
+    display: block;
+    margin-left: 80px;
+    margin-top: 80px;
+    height: 100vh;
+}
