@@ -7,13 +7,43 @@
 
 import React from "react";
 import { MainWindow } from "./lib/components/MainWindow";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
 import "./App.css";
 
+export const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
+
 function App(): JSX.Element {
+    const [mode, setMode] = React.useState<"light" | "dark">(
+        useMediaQuery("(prefers-color-scheme: dark)") ? "dark" : "light"
+    );
+    const colorMode = React.useMemo(
+        () => ({
+            toggleColorMode: () => {
+                setMode((prevMode) => (prevMode === "light" ? "dark" : "light"));
+            },
+        }),
+        []
+    );
+
+    const theme = React.useMemo(
+        () =>
+            createTheme({
+                palette: {
+                    mode,
+                },
+            }),
+        [mode]
+    );
+
     return (
         <React.StrictMode>
-            <MainWindow></MainWindow>
+            <ColorModeContext.Provider value={colorMode}>
+                <ThemeProvider theme={theme}>
+                    <MainWindow></MainWindow>
+                </ThemeProvider>
+            </ColorModeContext.Provider>
         </React.StrictMode>
     );
 }
