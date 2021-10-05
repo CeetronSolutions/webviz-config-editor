@@ -1,5 +1,5 @@
 import React from "react";
-import { AppBar, CssBaseline, Toolbar, Button, Tabs, Tab, Tooltip, Typography, IconButton } from "@mui/material";
+import { AppBar, CssBaseline, Toolbar, Button, Tabs, Tab, Typography, IconButton } from "@mui/material";
 import { Edit, PlayArrow, Settings } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import useSize from "@react-hook/size";
@@ -11,20 +11,32 @@ import "./main-window.css";
 import { ColorModeContext } from "../../../App";
 import { Editor } from "../Editor";
 
+import { Size } from "../../types/size";
+import { LivePreview } from "../LivePreview/live-preview";
+
 type MainWindowProps = {};
 
 export const MainWindow: React.FC<MainWindowProps> = (props) => {
     const [tab, setTab] = React.useState<number>(0);
+    const [editorSize, setEditorSize] = React.useState<Size>({ width: 0, height: 0 });
     const theme = useTheme();
     const colorMode = React.useContext(ColorModeContext);
 
-    const editorRef = React.useRef<HTMLDivElement | null>(null);
-    const [editorWidth, editorHeight] = useSize(editorRef);
+    const mainWindowRef = React.useRef<HTMLDivElement | null>(null);
+    const appBarRef = React.useRef<HTMLDivElement | null>(null);
+    const [windowWidth, windowHeight] = useSize(mainWindowRef);
+    const [appBarWidth, appBarHeight] = useSize(appBarRef);
+
+    React.useEffect(() => {
+        setEditorSize({
+            width: windowWidth - 80,
+            height: windowHeight - appBarHeight,
+        });
+    }, [windowWidth, windowHeight, appBarHeight, appBarWidth]);
 
     return (
-        <>
-            <CssBaseline />
-            <AppBar position="fixed" className="MenuBar">
+        <div className="MainWindow" ref={mainWindowRef}>
+            <AppBar position="relative" className="MenuBar" ref={appBarRef}>
                 <Toolbar>
                     <Button color="inherit">File</Button>
                     <Button color="inherit">Edit</Button>
@@ -36,16 +48,20 @@ export const MainWindow: React.FC<MainWindowProps> = (props) => {
                     </IconButton>
                 </Toolbar>
             </AppBar>
-            <div className="TabMenu">
-                <Tabs orientation="vertical" value={tab} onChange={(_, newValue) => setTab(newValue)}>
-                    <Tab icon={<Edit />} className="MenuTab" />
-                    <Tab icon={<PlayArrow />} className="MenuTab" />
-                    <Tab icon={<Settings />} className="MenuTab" />
-                </Tabs>
+            <div className="ContentWrapper">
+                <div className="TabMenu" style={{ backgroundColor: theme.palette.background.paper }}>
+                    <Tabs orientation="vertical" value={tab} onChange={(_, newValue) => setTab(newValue)}>
+                        <Tab icon={<Edit />} className="MenuTab" />
+                        <Tab icon={<PlayArrow />} className="MenuTab" />
+                        <Tab icon={<Settings />} className="MenuTab" />
+                    </Tabs>
+                </div>
+                <div className="Content">
+                    {tab === 0 && <Editor />}
+                    <LivePreview />
+                </div>
             </div>
-            <div className="Content" ref={editorRef}>
-                {tab === 0 && <Editor width={editorWidth} height={editorHeight} />}
-            </div>
-        </>
+            <div className="Toolbar"></div>
+        </div>
     );
 };

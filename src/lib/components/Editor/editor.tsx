@@ -8,14 +8,15 @@ import { addCompleter } from "ace-builds/src-noconflict/ext-language_tools";
 import "./editor.css";
 import { MenuItem, Select } from "@mui/material";
 
-type EditorProps = {
-    width: number;
-    height: number;
-};
+type EditorProps = {};
 
 export const Editor: React.FC<EditorProps> = (props) => {
-    const [fontSize, setFontSize] = React.useState(16);
-    const fontSizes = [12, 14, 16, 18, 20, 22, 24, 26];
+    const [fontSize, setFontSize] = React.useState(1);
+    const [currentLine, setCurrentLine] = React.useState(0);
+    const [currentColumn, setCurrentColumn] = React.useState(0);
+    const [currentSelection, setCurrentSelection] = React.useState<number | undefined>(undefined);
+
+    const fontSizes = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2];
 
     const editorRef = React.useRef<AceEditor>(null);
 
@@ -44,25 +45,44 @@ export const Editor: React.FC<EditorProps> = (props) => {
     });
 
     return (
-        <>
+        <div className="Editor">
             <AceEditor
                 ref={editorRef}
-                className="Editor"
+                className="EditorInput"
                 mode="yaml"
                 theme="monokai"
                 name="Editor"
-                editorProps={{ $blockScrolling: true }}
-                width={`${props.width}px`}
-                height={`${props.height}px`}
-                fontSize={fontSize}
+                editorProps={{
+                    $blockScrolling: true,
+                }}
+                onCursorChange={(selection: Ace.Selection) => {
+                    setCurrentLine(selection.getRange().end.row);
+                    setCurrentColumn(selection.getRange().end.column);
+                    if (editorRef.current) {
+                        setCurrentSelection(
+                            selection.isEmpty()
+                                ? undefined
+                                : editorRef.current.editor.getSession().getTextRange(selection.getRange()).length || 0
+                        );
+                    }
+                }}
+                width="100%"
+                fontSize={fontSize * 16}
                 enableLiveAutocompletion={true}
                 enableBasicAutocompletion={true}
             />
-            <Select value={fontSize} label="Font size" onChange={(event) => setFontSize(event.target.value as number)}>
-                {fontSizes.map((size) => (
-                    <MenuItem value={size}>{`${size}`}</MenuItem>
-                ))}
-            </Select>
-        </>
+            <div className="EditorSettings">
+                <select value={fontSize} onChange={(event) => setFontSize(parseFloat(event.target.value))}>
+                    {fontSizes.map((size) => (
+                        <option value={size}>{`${Math.floor(size * 100)} %`}</option>
+                    ))}
+                </select>
+                <div className="EditorInfo">
+                    {`Ln ${currentLine + 1}, Col ${currentColumn + 1} ${
+                        currentSelection ? `(${currentSelection} selected)` : ""
+                    }`}
+                </div>
+            </div>
+        </div>
     );
 };

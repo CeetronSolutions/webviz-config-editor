@@ -1,14 +1,29 @@
+.MainWindow {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
 .MenuBar {
     z-index: 11;
+    display: block;
+    position: relative;
 }
+
+.ContentWrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    height: calc(100vh - 100px);
+}
+
 .TabMenu {
     width: 80px;
-    position: fixed;
     left: 0;
     top: 64px;
     border-right: 1px #ccc solid;
-    height: 100vh;
     z-index: 10;
+    background-color: #ccc;
 }
 
 .TabMenu .MuiTab-root {
@@ -16,8 +31,7 @@
 }
 
 .Content {
-    display: block;
-    margin-left: 80px;
-    margin-top: 80px;
-    height: 100vh;
+    display: flex;
+    flex-grow: 4;
+    flex-direction: row;
 }
