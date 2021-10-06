@@ -4,6 +4,7 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
+const dotenv = require("dotenv");
 
 const packagejson = require("./package.json");
 const libraryName = packagejson.name.replace(/[-\/]/g, "_").replace(/@/g, "");
@@ -32,6 +33,14 @@ module.exports = (env, argv) => {
 
     // Devtool
     const devtool = argv.devtool || (mode === "development" ? "eval-source-map" : false);
+
+    // Dotenv environment variables
+    const envVars = dotenv.config().parsed;
+
+    const envKeys = Object.keys(envVars).reduce((prev, next) => {
+        prev[`process.env.${next}`] = JSON.stringify(envVars[next]);
+        return prev;
+    }, {});
 
     // NOTE: Keep order of the following configuration output
     // See: https://webpack.js.org/configuration/
@@ -116,6 +125,7 @@ module.exports = (env, argv) => {
                 ],
             }),
             new webpack.IgnorePlugin({ resourceRegExp: /(fs|child_process)/ }),
+            new webpack.DefinePlugin(envKeys),
         ],
         optimization: {
             minimizer: [

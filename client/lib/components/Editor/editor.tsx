@@ -1,12 +1,13 @@
 import React from "react";
 import AceEditor from "react-ace";
-import ace, { Ace } from "ace-builds";
+import { Ace } from "ace-builds";
 import "ace-builds/src-noconflict/mode-yaml";
 import "ace-builds/src-noconflict/theme-monokai";
 import { addCompleter } from "ace-builds/src-noconflict/ext-language_tools";
 
+import { useStore, StoreActions } from "../../utils/store";
+
 import "./editor.css";
-import { MenuItem, Select } from "@mui/material";
 
 type EditorProps = {};
 
@@ -15,6 +16,8 @@ export const Editor: React.FC<EditorProps> = (props) => {
     const [currentLine, setCurrentLine] = React.useState(0);
     const [currentColumn, setCurrentColumn] = React.useState(0);
     const [currentSelection, setCurrentSelection] = React.useState<number | undefined>(undefined);
+
+    const store = useStore();
 
     const fontSizes = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2];
 
@@ -44,6 +47,10 @@ export const Editor: React.FC<EditorProps> = (props) => {
         });
     });
 
+    const handleChange = (value: string) => {
+        store.dispatch({ type: StoreActions.SetEditorValue, payload: { value: value } });
+    };
+
     return (
         <div className="Editor">
             <AceEditor
@@ -66,6 +73,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                         );
                     }
                 }}
+                onChange={(value: string) => handleChange(value)}
                 width="100%"
                 fontSize={fontSize * 16}
                 enableLiveAutocompletion={true}

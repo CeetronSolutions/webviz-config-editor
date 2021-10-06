@@ -1,5 +1,5 @@
 import React from "react";
-import { AppBar, CssBaseline, Toolbar, Button, Tabs, Tab, Typography, IconButton } from "@mui/material";
+import { AppBar, Toolbar, Button, Tabs, Tab, Typography, IconButton } from "@mui/material";
 import { Edit, PlayArrow, Settings } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import useSize from "@react-hook/size";
@@ -13,6 +13,7 @@ import { Editor } from "../Editor";
 
 import { Size } from "../../types/size";
 import { LivePreview } from "../LivePreview/live-preview";
+import { Preferences } from "../Preferences/preferences";
 
 type MainWindowProps = {};
 
@@ -57,8 +58,13 @@ export const MainWindow: React.FC<MainWindowProps> = (props) => {
                     </Tabs>
                 </div>
                 <div className="Content">
-                    {tab === 0 && <Editor />}
-                    <LivePreview />
+                    {tab === 0 && (
+                        <>
+                            <Editor />
+                            <LivePreview />
+                        </>
+                    )}
+                    {tab === 2 && <Preferences />}
                 </div>
             </div>
             <div className="Toolbar"></div>

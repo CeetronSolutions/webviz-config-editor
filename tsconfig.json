@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "baseUrl": "src",
+        "baseUrl": "./",
         "target": "es6",
         "lib": ["dom", "dom.iterable", "esnext"],
         "allowJs": false,
@@ -22,5 +22,5 @@
         "sourceMap": true,
         "outDir": "./dist"
     },
-    "include": ["./src", "./src/lib/types/custom.d.ts"]
+    "include": ["./server", "./client"]
 }
