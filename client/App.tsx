@@ -11,7 +11,8 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
 import "./App.css";
-import { StoreProvider } from "./lib/utils/store";
+import { StoreProvider } from "./lib/components/Store/store";
+import { NotificationsProvider } from "./lib/components/Notifications";
 
 export const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
@@ -42,9 +43,11 @@ function App(): JSX.Element {
         <React.StrictMode>
             <ColorModeContext.Provider value={colorMode}>
                 <ThemeProvider theme={theme}>
-                    <StoreProvider>
-                        <MainWindow></MainWindow>
-                    </StoreProvider>
+                    <NotificationsProvider>
+                        <StoreProvider>
+                            <MainWindow></MainWindow>
+                        </StoreProvider>
+                    </NotificationsProvider>
                 </ThemeProvider>
             </ColorModeContext.Provider>
         </React.StrictMode>

@@ -54,6 +54,10 @@ module.exports = (env, argv) => {
                 type: "window",
                 name: libraryName,
             },
+            publicPath: "/",
+        },
+        devServer: {
+            historyApiFallback: true,
         },
         module: {
             rules: [

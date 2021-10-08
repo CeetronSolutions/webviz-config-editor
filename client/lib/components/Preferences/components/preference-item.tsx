@@ -1,44 +1,97 @@
 import React from "react";
-import { Typography, TextField, Button } from "@mui/material";
+import { Typography, TextField, Grid } from "@mui/material";
 
 import { SettingMeta } from "../../../utils/settings";
-import { useStore } from "../../../utils/store";
+import { useStore, StoreActions } from "../../Store/store";
+import { makeRequest, RequestMethod } from "../../../utils/api";
+
+enum PreferenceItemState {
+    VALIDATING = 0,
+    VALID,
+    INVALID,
+}
 
 export const PreferenceItem: React.FC<SettingMeta> = (props) => {
     const store = useStore();
-    const [value, setValue] = React.useState<string | number>("");
     const [localValue, setLocalValue] = React.useState<string | number>("");
+    const [state, setState] = React.useState<{ state: PreferenceItemState; message: string }>({
+        state: PreferenceItemState.VALID,
+        message: "",
+    });
 
     React.useEffect(() => {
-        setValue(store.state.settings.find((el) => el.id === props.id).value || "");
-    }, [props.id, store.state]);
+        setLocalValue(store.state.settings.find((el) => el.id === props.id)?.value || "");
+    }, []);
+
+    React.useEffect(() => {
+        setState({ state: PreferenceItemState.VALID, message: "" });
+        if (props.type === "pythonInterpreter") {
+            setState({ state: PreferenceItemState.VALIDATING, message: "" });
+            makeRequest(
+                "/check-if-python-interpreter",
+                (data, error) => {
+                    if (error) {
+                        setState({ state: PreferenceItemState.INVALID, message: error });
+                    } else if (data["result"] === "success") {
+                        setState({ state: PreferenceItemState.VALID, message: "" });
+                        store.dispatch({
+                            type: StoreActions.SetSetting,
+                            payload: {
+                                id: props.id,
+                                value: localValue,
+                            },
+                        });
+                    } else {
+                        setState({ state: PreferenceItemState.INVALID, message: data["message"] });
+                    }
+                },
+                RequestMethod.POST,
+                {
+                    filePath: localValue,
+                }
+            );
+        } else {
+            store.dispatch({
+                type: StoreActions.SetSetting,
+                payload: {
+                    id: props.id,
+                    value: localValue,
+                },
+            });
+        }
+    }, [localValue]);
 
     return (
-        <div className="PreferenceItem">
-            <Typography variant="h6">{props.label}</Typography>
-            <Typography variant="body2">{props.description}</Typography>
-            {props.type === "string" && <TextField id={props.id} type={props.type} value={value as string} />}
-            {props.type === "file" && (
-                <>
-                    <input
-                        accept="inode/symlink"
-                        id="raised-button-file"
-                        multiple
-                        type="file"
-                        style={{ display: "none" }}
-                        onChange={(e: React.FormEvent<HTMLInputElement>) => setLocalValue(e.currentTarget.value)}
-                    />
+        <Grid className="PreferenceItem" container spacing={2} direction="column">
+            <Grid item>
+                <Typography variant="h6">{props.label}</Typography>
+            </Grid>
+            <Grid item>
+                <Typography variant="body2">{props.description}</Typography>
+            </Grid>
+            <Grid item>
+                {props.type === "string" && (
                     <TextField
-                        InputProps={{
-                            readOnly: true,
-                        }}
-                        value={localValue}
+                        id={props.id}
+                        type={props.type}
+                        value={localValue as string}
+                        error={state.state === PreferenceItemState.INVALID}
+                        color={state.state === PreferenceItemState.VALID ? "success" : "error"}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalValue(e.target.value)}
                     />
-                    <label htmlFor="raised-button-file">
-                        <Button component="span">Select</Button>
-                    </label>
-                </>
-            )}
-        </div>
+                )}
+                {props.type === "pythonInterpreter" && (
+                    <TextField
+                        id={props.id}
+                        type="string"
+                        value={localValue as string}
+                        error={state.state === PreferenceItemState.INVALID}
+                        color={state.state === PreferenceItemState.VALID ? "success" : "error"}
+                        helperText={state.message}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalValue(e.target.value)}
+                    />
+                )}
+            </Grid>
+        </Grid>
     );
 };

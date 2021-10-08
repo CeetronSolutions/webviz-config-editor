@@ -1,4 +1,5 @@
 import React from "react";
+import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
 import { AppBar, Toolbar, Button, Tabs, Tab, Typography, IconButton } from "@mui/material";
 import { Edit, PlayArrow, Settings } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
@@ -35,39 +36,68 @@ export const MainWindow: React.FC<MainWindowProps> = (props) => {
         });
     }, [windowWidth, windowHeight, appBarHeight, appBarWidth]);
 
+    const routes = ["/", "/play", "/settings"];
+
     return (
-        <div className="MainWindow" ref={mainWindowRef}>
-            <AppBar position="relative" className="MenuBar" ref={appBarRef}>
-                <Toolbar>
-                    <Button color="inherit">File</Button>
-                    <Button color="inherit">Edit</Button>
-                    <Typography variant="h6" component="div" sx={{ flexGrow: 1, textAlign: "center" }}>
-                        Webviz Config Editor
-                    </Typography>
-                    <IconButton sx={{ ml: 1 }} onClick={colorMode.toggleColorMode} color="inherit">
-                        {theme.palette.mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
-                    </IconButton>
-                </Toolbar>
-            </AppBar>
-            <div className="ContentWrapper">
-                <div className="TabMenu" style={{ backgroundColor: theme.palette.background.paper }}>
-                    <Tabs orientation="vertical" value={tab} onChange={(_, newValue) => setTab(newValue)}>
-                        <Tab icon={<Edit />} className="MenuTab" />
-                        <Tab icon={<PlayArrow />} className="MenuTab" />
-                        <Tab icon={<Settings />} className="MenuTab" />
-                    </Tabs>
+        <Router>
+            <div className="MainWindow" ref={mainWindowRef}>
+                <AppBar position="relative" className="MenuBar" ref={appBarRef}>
+                    <Toolbar>
+                        <Button color="inherit">File</Button>
+                        <Button color="inherit">Edit</Button>
+                        <Typography variant="h6" component="div" sx={{ flexGrow: 1, textAlign: "center" }}>
+                            Webviz Config Editor
+                        </Typography>
+                        <IconButton sx={{ ml: 1 }} onClick={colorMode.toggleColorMode} color="inherit">
+                            {theme.palette.mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
+                        </IconButton>
+                    </Toolbar>
+                </AppBar>
+                <div className="ContentWrapper">
+                    <div className="TabMenu" style={{ backgroundColor: theme.palette.background.paper }}>
+                        <Route
+                            path="/"
+                            render={(history) => (
+                                <Tabs orientation="vertical" value={history.location.pathname}>
+                                    <Tab
+                                        icon={<Edit />}
+                                        value={routes[0]}
+                                        className="MenuTab"
+                                        component={Link}
+                                        to={routes[0]}
+                                    />
+                                    <Tab
+                                        icon={<PlayArrow />}
+                                        value={routes[1]}
+                                        className="MenuTab"
+                                        component={Link}
+                                        to={routes[1]}
+                                    />
+                                    <Tab
+                                        icon={<Settings />}
+                                        value={routes[2]}
+                                        className="MenuTab"
+                                        component={Link}
+                                        to={routes[2]}
+                                    />
+                                </Tabs>
+                            )}
+                        />
+                    </div>
+                    <div className="Content">
+                        <Switch>
+                            <Route exact path="/">
+                                <Editor />
+                                <LivePreview />
+                            </Route>
+                            <Route path="/settings">
+                                <Preferences />
+                            </Route>
+                        </Switch>
+                    </div>
                 </div>
-                <div className="Content">
-                    {tab === 0 && (
-                        <>
-                            <Editor />
-                            <LivePreview />
-                        </>
-                    )}
-                    {tab === 2 && <Preferences />}
-                </div>
+                <div className="Toolbar"></div>
             </div>
-            <div className="Toolbar"></div>
-        </div>
+        </Router>
     );
 };

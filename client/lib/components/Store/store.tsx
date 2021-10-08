@@ -1,9 +1,12 @@
 import React from "react";
 
-import { Setting, Settings, compressSettings } from "./settings";
-import { JsonSchemaParser } from "./json-schema-parser";
+import { Setting, Settings, compressSettings } from "../../utils/settings";
+import { JsonSchemaParser } from "../../utils/json-schema-parser";
+import { makeRequest, RequestMethod } from "../../utils/api";
+import { createGenericContext } from "../../utils/generic-context";
+import { NotificationType, useNotifications } from "../Notifications";
 
-type ActionMap<M extends { [index: string]: { [key: string]: string | number | JsonSchemaParser } }> = {
+type ActionMap<M extends { [index: string]: { [key: string]: string | number | JsonSchemaParser | Setting[] } }> = {
     [Key in keyof M]: M[Key] extends undefined
         ? {
               type: Key;
@@ -15,6 +18,7 @@ type ActionMap<M extends { [index: string]: { [key: string]: string | number | J
 };
 
 export enum StoreActions {
+    SetSettings = "SET_SETTINGS",
     SetSetting = "SET_SETTING",
     SetEditorValue = "SET_EDITOR_VALUE",
     SetAbsPathToJsonSchema = "SET_JSON_SCHEMA",
@@ -29,6 +33,9 @@ export type StoreState = {
 };
 
 type Payload = {
+    [StoreActions.SetSettings]: {
+        settings: Setting[];
+    };
     [StoreActions.SetSetting]: {
         id: string;
         value: string | number;
@@ -64,13 +71,20 @@ export const StoreReducerInit = (initialState: StoreState): StoreState => {
 
 export const StoreReducer = (state: StoreState, action: Actions): StoreState => {
     switch (action.type) {
-        case StoreActions.SetSetting:
+        case StoreActions.SetSettings:
             return {
                 ...state,
-                settings: state.settings.map((setting) => ({
-                    id: setting.id,
-                    value: setting.id === action.payload.id ? action.payload.value : setting.value,
-                })),
+                settings: action.payload.settings,
+            };
+            break;
+        case StoreActions.SetSetting:
+            const newSettings = state.settings.map((setting) => ({
+                id: setting.id,
+                value: setting.id === action.payload.id ? action.payload.value : setting.value,
+            }));
+            return {
+                ...state,
+                settings: newSettings,
             };
             break;
         case StoreActions.SetAbsPathToJsonSchema:
@@ -91,26 +105,48 @@ type Context = {
     dispatch: React.Dispatch<Actions>;
 };
 
-const createGenericContext = <T extends unknown>() => {
-    // Create a context with a generic parameter or undefined
-    const genericContext = React.createContext<T | undefined>(undefined);
-
-    // Check if the value provided to the context is defined or throw an error
-    const useGenericContext = () => {
-        const contextIsDefined = React.useContext(genericContext);
-        if (!contextIsDefined) {
-            throw new Error("useGenericContext must be used within a Provider");
-        }
-        return contextIsDefined;
-    };
-
-    return [useGenericContext, genericContext.Provider] as const;
-};
-
 const [useStoreContext, StoreContextProvider] = createGenericContext<Context>();
 
 export const StoreProvider: React.FC = (props) => {
     const [state, dispatch] = React.useReducer(StoreReducer, initialState, StoreReducerInit);
+
+    const notifications = useNotifications();
+
+    React.useEffect(() => {
+        makeRequest("/read-settings", (data, error) => {
+            if (error) {
+                notifications.appendNotification({ type: NotificationType.ERROR, message: error });
+            } else {
+                dispatch({
+                    type: StoreActions.SetSettings,
+                    payload: {
+                        settings: data["settings"],
+                    },
+                });
+            }
+        });
+    }, []);
+
+    React.useEffect(() => {
+        makeRequest(
+            "/save-settings",
+            (data, error) => {
+                if (error) {
+                    notifications.appendNotification({
+                        type: NotificationType.ERROR,
+                        message: error,
+                    });
+                } else {
+                    notifications.appendNotification({
+                        type: NotificationType.SUCCESS,
+                        message: data["message"],
+                    });
+                }
+            },
+            RequestMethod.PUT,
+            state.settings
+        );
+    }, [state.settings]);
 
     return <StoreContextProvider value={{ state, dispatch }}>{props.children}</StoreContextProvider>;
 };

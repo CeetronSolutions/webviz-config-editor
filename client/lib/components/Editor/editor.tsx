@@ -5,7 +5,7 @@ import "ace-builds/src-noconflict/mode-yaml";
 import "ace-builds/src-noconflict/theme-monokai";
 import { addCompleter } from "ace-builds/src-noconflict/ext-language_tools";
 
-import { useStore, StoreActions } from "../../utils/store";
+import { useStore, StoreActions } from "../Store/store";
 
 import "./editor.css";
 

@@ -7,7 +7,7 @@ export interface SettingMeta {
     id: string;
     label: string;
     description: string;
-    type: "string" | "number" | "file";
+    type: "string" | "number" | "file" | "pythonInterpreter";
     defaultValue: string | number;
 }
 
@@ -17,7 +17,16 @@ export const Settings: { [key: string]: SettingMeta[] } = {
             id: "python-interpreter",
             label: "Interpreter",
             description: "Select the interpreter that you are using with Webviz.",
-            type: "file",
+            type: "pythonInterpreter",
+            defaultValue: "",
+        },
+    ],
+    Theme: [
+        {
+            id: "theme",
+            label: "Theme",
+            description: "Select the theme you want to use with Webviz.",
+            type: "string",
             defaultValue: "",
         },
     ],
