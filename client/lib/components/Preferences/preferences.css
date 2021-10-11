@@ -1,3 +1,8 @@
 .Preferences {
     padding: 16px;
 }
+
+.PreferenceCategory {
+    padding: 16px;
+    margin-bottom: 40px;
+}

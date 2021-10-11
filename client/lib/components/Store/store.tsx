@@ -78,20 +78,15 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
             };
             break;
         case StoreActions.SetSetting:
-            const newSettings = state.settings.map((setting) => ({
-                id: setting.id,
-                value: setting.id === action.payload.id ? action.payload.value : setting.value,
-            }));
+            if (action.payload.id === "python-interpreter") {
+                state.jsonSchemaParser.generateJsonSchema(action.payload.value as string);
+            }
             return {
                 ...state,
-                settings: newSettings,
-            };
-            break;
-        case StoreActions.SetAbsPathToJsonSchema:
-            state.jsonSchemaParser.loadJsonSchema(action.payload.absPath);
-            return {
-                ...state,
-                absPathToJsonSchema: action.payload.absPath,
+                settings: state.settings.map((setting) => ({
+                    id: setting.id,
+                    value: setting.id === action.payload.id ? action.payload.value : setting.value,
+                })),
             };
             break;
         default:

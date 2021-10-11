@@ -1,9 +1,10 @@
 import React from "react";
-import { Typography, TextField, Grid } from "@mui/material";
+import { Typography, TextField, Grid, CircularProgress } from "@material-ui/core";
 
 import { SettingMeta } from "../../../utils/settings";
 import { useStore, StoreActions } from "../../Store/store";
 import { makeRequest, RequestMethod } from "../../../utils/api";
+import { Autocomplete } from "@material-ui/lab";
 
 enum PreferenceItemState {
     VALIDATING = 0,
@@ -11,9 +12,19 @@ enum PreferenceItemState {
     INVALID,
 }
 
+enum PreferenceItemLoadingState {
+    LOADING = 0,
+    LOADED,
+    ERROR,
+}
+
 export const PreferenceItem: React.FC<SettingMeta> = (props) => {
     const store = useStore();
     const [localValue, setLocalValue] = React.useState<string | number>("");
+    const [installations, setInstallations] = React.useState<string[]>([]);
+    const [loadingState, setLoadingState] = React.useState<PreferenceItemLoadingState>(
+        props.type === "pythonInterpreter" ? PreferenceItemLoadingState.LOADING : PreferenceItemLoadingState.LOADED
+    );
     const [state, setState] = React.useState<{ state: PreferenceItemState; message: string }>({
         state: PreferenceItemState.VALID,
         message: "",
@@ -21,7 +32,19 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
 
     React.useEffect(() => {
         setLocalValue(store.state.settings.find((el) => el.id === props.id)?.value || "");
-    }, []);
+        makeRequest("/get-python-installations", (data, error) => {
+            if (error) {
+                setInstallations([]);
+                setLoadingState(PreferenceItemLoadingState.ERROR);
+            } else if (data["result"] === "success") {
+                setInstallations(data["installations"]);
+                setLoadingState(PreferenceItemLoadingState.LOADED);
+            } else {
+                setInstallations([]);
+                setLoadingState(PreferenceItemLoadingState.ERROR);
+            }
+        });
+    }, [setInstallations, setLoadingState]);
 
     React.useEffect(() => {
         setState({ state: PreferenceItemState.VALID, message: "" });
@@ -76,20 +99,36 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                         type={props.type}
                         value={localValue as string}
                         error={state.state === PreferenceItemState.INVALID}
-                        color={state.state === PreferenceItemState.VALID ? "success" : "error"}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalValue(e.target.value)}
                     />
                 )}
                 {props.type === "pythonInterpreter" && (
-                    <TextField
-                        id={props.id}
-                        type="string"
-                        value={localValue as string}
-                        error={state.state === PreferenceItemState.INVALID}
-                        color={state.state === PreferenceItemState.VALID ? "success" : "error"}
-                        helperText={state.message}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalValue(e.target.value)}
-                    />
+                    <>
+                        {loadingState === PreferenceItemLoadingState.LOADING && <CircularProgress />}
+                        {loadingState !== PreferenceItemLoadingState.LOADING && (
+                            <Autocomplete
+                                id={props.id}
+                                options={installations}
+                                getOptionLabel={(option) => option}
+                                onChange={(_: React.ChangeEvent<unknown>, newValue: string | null) =>
+                                    setLocalValue(newValue !== null ? newValue : "")
+                                }
+                                value={localValue as string}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        type="string"
+                                        value={localValue as string}
+                                        error={state.state === PreferenceItemState.INVALID}
+                                        helperText={state.message}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                            setLocalValue(e.target.value)
+                                        }
+                                    />
+                                )}
+                            />
+                        )}
+                    </>
                 )}
             </Grid>
         </Grid>

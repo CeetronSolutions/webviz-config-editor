@@ -7,8 +7,8 @@
 
 import React from "react";
 import { MainWindow } from "./lib/components/MainWindow";
-import { ThemeProvider, createTheme } from "@mui/material/styles";
-import useMediaQuery from "@mui/material/useMediaQuery";
+import { ThemeProvider, createTheme } from "@material-ui/core/styles";
+import useMediaQuery from "@material-ui/core/useMediaQuery";
 
 import "./App.css";
 import { StoreProvider } from "./lib/components/Store/store";
@@ -33,24 +33,22 @@ function App(): JSX.Element {
         () =>
             createTheme({
                 palette: {
-                    mode,
+                    type: mode,
                 },
             }),
         [mode]
     );
 
     return (
-        <React.StrictMode>
-            <ColorModeContext.Provider value={colorMode}>
-                <ThemeProvider theme={theme}>
-                    <NotificationsProvider>
-                        <StoreProvider>
-                            <MainWindow></MainWindow>
-                        </StoreProvider>
-                    </NotificationsProvider>
-                </ThemeProvider>
-            </ColorModeContext.Provider>
-        </React.StrictMode>
+        <ColorModeContext.Provider value={colorMode}>
+            <ThemeProvider theme={theme}>
+                <NotificationsProvider>
+                    <StoreProvider>
+                        <MainWindow></MainWindow>
+                    </StoreProvider>
+                </NotificationsProvider>
+            </ThemeProvider>
+        </ColorModeContext.Provider>
     );
 }
 

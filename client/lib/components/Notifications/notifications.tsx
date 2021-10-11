@@ -1,6 +1,7 @@
 import React from "react";
-import { Snackbar, Button, IconButton, Alert, AlertColor } from "@mui/material";
-import { Close } from "@mui/icons-material";
+import { Snackbar, Button, IconButton } from "@material-ui/core";
+import { Alert, Color } from "@material-ui/lab";
+import { Close } from "@material-ui/icons";
 
 import { createGenericContext } from "../../utils/generic-context";
 
@@ -11,7 +12,7 @@ export enum NotificationType {
     SUCCESS,
 }
 
-const notificationTypeMap: { [key: number]: AlertColor } = {
+const notificationTypeMap: { [key: number]: Color } = {
     [NotificationType.ERROR]: "error",
     [NotificationType.WARNING]: "warning",
     [NotificationType.INFORMATION]: "info",

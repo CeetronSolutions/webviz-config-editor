@@ -1,11 +1,9 @@
 import React from "react";
 import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
-import { AppBar, Toolbar, Button, Tabs, Tab, Typography, IconButton } from "@mui/material";
-import { Edit, PlayArrow, Settings } from "@mui/icons-material";
-import { useTheme } from "@mui/material/styles";
+import { AppBar, Toolbar, Button, Tabs, Tab, Typography, IconButton } from "@material-ui/core";
+import { Edit, PlayArrow, Settings, Brightness4, Brightness7 } from "@material-ui/icons";
+import { useTheme } from "@material-ui/core/styles";
 import useSize from "@react-hook/size";
-import Brightness4Icon from "@mui/icons-material/Brightness4";
-import Brightness7Icon from "@mui/icons-material/Brightness7";
 
 import "./main-window.css";
 
@@ -45,11 +43,11 @@ export const MainWindow: React.FC<MainWindowProps> = (props) => {
                     <Toolbar>
                         <Button color="inherit">File</Button>
                         <Button color="inherit">Edit</Button>
-                        <Typography variant="h6" component="div" sx={{ flexGrow: 1, textAlign: "center" }}>
+                        <Typography variant="h6" component="div" style={{ flexGrow: 1, textAlign: "center" }}>
                             Webviz Config Editor
                         </Typography>
-                        <IconButton sx={{ ml: 1 }} onClick={colorMode.toggleColorMode} color="inherit">
-                            {theme.palette.mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
+                        <IconButton onClick={colorMode.toggleColorMode} color="inherit">
+                            {theme.palette.type === "dark" ? <Brightness7 /> : <Brightness4 />}
                         </IconButton>
                     </Toolbar>
                 </AppBar>

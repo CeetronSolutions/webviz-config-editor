@@ -2,6 +2,7 @@ import * as express from "express";
 import * as cors from "cors";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
+import * as which from "which";
 import { execSync } from "child_process";
 
 dotenv.config();
@@ -82,11 +83,34 @@ app.get("/read-settings", (request: express.Request, response: express.Response)
     }
 });
 
-app.get("/read-json-schema", (request: express.Request, response: express.Response) => {
+app.get("/get-python-installations", (request: express.Request, response: express.Response) => {
     try {
-        const fileContent = fs.readFileSync(request.body.filePath).toString();
-        const schema = JSON.parse(fileContent);
-        response.json({ result: "success", schema: schema });
+        which("python", { all: true }, (error: Error, resolvedPaths: string | readonly string[]) => {
+            if (error) {
+                response.json({ result: "error", message: "Could not find installations.", details: error });
+                return;
+            }
+            response.json({ result: "success", installations: resolvedPaths });
+        });
+    } catch (error) {
+        response.json({ result: "error", message: "Could not load settings.", details: error });
+    }
+});
+
+app.post("/generate-json-schema", (request: express.Request, response: express.Response) => {
+    try {
+        const stdout = execSync(
+            `${request.body.pythonInterpreter} -c "from webviz_config import command_line; command_line.main()" schema`
+        ).toString();
+        const regex = /(\/[a-zA-Z0-9_ -\\.]{1,})+/;
+        const match = stdout.match(regex);
+        if (match) {
+            const fileContent = fs.readFileSync(match[0]).toString();
+            const schema = JSON.parse(fileContent);
+            response.json({ result: "success", schema: schema });
+        } else {
+            response.json({ result: "error", message: "Could not generate JSON schema.", details: stdout });
+        }
     } catch (error) {
         response.json({ result: "error", message: "Could not load JSON schema.", details: error });
     }
