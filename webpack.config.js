@@ -4,10 +4,14 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
+const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
 const dotenv = require("dotenv");
 
 const packagejson = require("./package.json");
 const libraryName = packagejson.name.replace(/[-\/]/g, "_").replace(/@/g, "");
+
+const APP_DIR = path.resolve(__dirname, "./src");
+const MONACO_DIR = path.resolve(__dirname, "./node_modules/monaco-editor");
 
 module.exports = (env, argv) => {
     const overrides = module.exports || {};
@@ -72,13 +76,29 @@ module.exports = (env, argv) => {
                     use: ["babel-loader", "ts-loader"],
                 },
                 {
+                    test: /\.ttf$/,
+                    use: ["file-loader"],
+                },
+                {
                     test: /\.css$/,
+                    include: APP_DIR,
                     use: [
                         {
                             loader: mode === "production" ? MiniCssExtractPlugin.loader : "style-loader",
                         },
-                        "css-loader",
+                        {
+                            loader: "css-loader",
+                            options: {
+                                modules: true,
+                                namedExport: true,
+                            },
+                        },
                     ],
+                },
+                {
+                    test: /\.css$/,
+                    include: MONACO_DIR,
+                    use: ["style-loader", "css-loader"],
                 },
                 {
                     test: /\.(png|jpg|jpeg|gif)$/i,
@@ -106,6 +126,9 @@ module.exports = (env, argv) => {
         },
         devtool: devtool,
         plugins: [
+            new MonacoWebpackPlugin({
+                languages: ["yaml"],
+            }),
             new webpack.ProvidePlugin({
                 process: "process/browser",
             }),

@@ -87,13 +87,29 @@ app.get("/get-python-installations", (request: express.Request, response: expres
     try {
         which("python", { all: true }, (error: Error, resolvedPaths: string | readonly string[]) => {
             if (error) {
-                response.json({ result: "error", message: "Could not find installations.", details: error });
-                return;
+                which("python3", { all: true }, (error: Error, resolvedPaths: string | readonly string[]) => {
+                    if (error) {
+                        response.json({ result: "error", message: "Could not find installations.", details: error });
+                        return;
+                    }
+                    response.json({ result: "success", installations: resolvedPaths });
+                });
+            } else {
+                response.json({ result: "success", installations: resolvedPaths });
             }
-            response.json({ result: "success", installations: resolvedPaths });
         });
     } catch (error) {
-        response.json({ result: "error", message: "Could not load settings.", details: error });
+        try {
+            which("python3", { all: true }, (error: Error, resolvedPaths: string | readonly string[]) => {
+                if (error) {
+                    response.json({ result: "error", message: "Could not find installations.", details: error });
+                    return;
+                }
+                response.json({ result: "success", installations: resolvedPaths });
+            });
+        } catch (error) {
+            response.json({ result: "error", message: "Could not find installations.", details: error });
+        }
     }
 });
 

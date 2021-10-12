@@ -8,7 +8,7 @@ import useSize from "@react-hook/size";
 import "./main-window.css";
 
 import { ColorModeContext } from "../../../App";
-import { Editor } from "../Editor";
+import { YamlEditor } from "../Editor";
 
 import { Size } from "../../types/size";
 import { LivePreview } from "../LivePreview/live-preview";
@@ -85,7 +85,7 @@ export const MainWindow: React.FC<MainWindowProps> = (props) => {
                     <div className="Content">
                         <Switch>
                             <Route exact path="/">
-                                <Editor />
+                                <YamlEditor />
                                 <LivePreview />
                             </Route>
                             <Route path="/settings">

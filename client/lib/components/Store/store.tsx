@@ -1,12 +1,11 @@
 import React from "react";
 
 import { Setting, Settings, compressSettings } from "../../utils/settings";
-import { JsonSchemaParser } from "../../utils/json-schema-parser";
 import { makeRequest, RequestMethod } from "../../utils/api";
 import { createGenericContext } from "../../utils/generic-context";
 import { NotificationType, useNotifications } from "../Notifications";
 
-type ActionMap<M extends { [index: string]: { [key: string]: string | number | JsonSchemaParser | Setting[] } }> = {
+type ActionMap<M extends { [index: string]: { [key: string]: string | number | Setting[] | object } }> = {
     [Key in keyof M]: M[Key] extends undefined
         ? {
               type: Key;
@@ -22,14 +21,14 @@ export enum StoreActions {
     SetSetting = "SET_SETTING",
     SetEditorValue = "SET_EDITOR_VALUE",
     SetAbsPathToJsonSchema = "SET_JSON_SCHEMA",
-    SetJsonSchemaParser = "SET_JSON_SCHEMA_PARSER",
+    SetJsonSchema = "SET_JSON_SCHEMA",
 }
 
 export type StoreState = {
     editorValue: string;
     absPathToJsonSchema: string;
-    jsonSchemaParser: JsonSchemaParser;
     settings: Setting[];
+    jsonSchema: object;
 };
 
 type Payload = {
@@ -43,11 +42,8 @@ type Payload = {
     [StoreActions.SetEditorValue]: {
         value: string;
     };
-    [StoreActions.SetAbsPathToJsonSchema]: {
-        absPath: string;
-    };
-    [StoreActions.SetJsonSchemaParser]: {
-        parser: JsonSchemaParser;
+    [StoreActions.SetJsonSchema]: {
+        schema: object;
     };
 };
 
@@ -56,16 +52,16 @@ export type Actions = ActionMap<Payload>[keyof ActionMap<Payload>];
 const initialState: StoreState = {
     editorValue: "",
     absPathToJsonSchema: "",
-    jsonSchemaParser: new JsonSchemaParser(),
     settings: compressSettings(Settings),
+    jsonSchema: {},
 };
 
 export const StoreReducerInit = (initialState: StoreState): StoreState => {
     return {
         editorValue: initialState.editorValue,
         absPathToJsonSchema: initialState.absPathToJsonSchema,
-        jsonSchemaParser: initialState.jsonSchemaParser,
         settings: initialState.settings,
+        jsonSchema: {},
     };
 };
 
@@ -78,15 +74,19 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
             };
             break;
         case StoreActions.SetSetting:
-            if (action.payload.id === "python-interpreter") {
-                state.jsonSchemaParser.generateJsonSchema(action.payload.value as string);
-            }
+            const newSettings = state.settings.map((setting) => ({
+                id: setting.id,
+                value: setting.id === action.payload.id ? action.payload.value : setting.value,
+            }));
             return {
                 ...state,
-                settings: state.settings.map((setting) => ({
-                    id: setting.id,
-                    value: setting.id === action.payload.id ? action.payload.value : setting.value,
-                })),
+                settings: newSettings,
+            };
+            break;
+        case StoreActions.SetJsonSchema:
+            return {
+                ...state,
+                jsonSchema: action.payload.schema,
             };
             break;
         default:
@@ -110,7 +110,7 @@ export const StoreProvider: React.FC = (props) => {
     React.useEffect(() => {
         makeRequest("/read-settings", (data, error) => {
             if (error) {
-                notifications.appendNotification({ type: NotificationType.ERROR, message: error });
+                notifications.appendNotification({ type: NotificationType.ERROR, message: "Could not read settings." });
             } else {
                 dispatch({
                     type: StoreActions.SetSettings,
@@ -120,6 +120,26 @@ export const StoreProvider: React.FC = (props) => {
                 });
             }
         });
+        makeRequest(
+            "/generate-json-schema",
+            (data, error) => {
+                if (error) {
+                    return;
+                }
+                let jsonSchema: object = {};
+                if (data["result"] === "success") {
+                    jsonSchema = JSON.parse(data["schema"]);
+                }
+                dispatch({
+                    type: StoreActions.SetJsonSchema,
+                    payload: {
+                        schema: jsonSchema,
+                    },
+                });
+            },
+            RequestMethod.POST,
+            { pythonInterpreter: state.settings.find((el) => el.id === "pythonInterpreter")?.value }
+        );
     }, []);
 
     React.useEffect(() => {
