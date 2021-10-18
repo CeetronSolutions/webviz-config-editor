@@ -1,0 +1,25 @@
+.Editor {
+    padding-top: 8px;
+    background-color: #2f3129;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 4;
+}
+
+.EditorInput {
+    flex-grow: 4;
+}
+
+.EditorSettings {
+    max-height: 40px;
+    padding: 8px;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+}
+
+.EditorInfo {
+    color: white;
+    text-align: right;
+    flex-grow: 4;
+}
