@@ -5,11 +5,45 @@ import { setDiagnosticsOptions } from "monaco-yaml";
 
 import { useStore, StoreActions } from "../Store/store";
 
+import {
+  editor,
+  Environment,
+  languages,
+  Position,
+  Range,
+  Uri,
+} from 'monaco-editor/esm/vs/editor/editor.api';
+
 import "./editor.css";
 import fs from "fs";
 
+// @ts-ignore
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import EditorWorker from 'worker-loader!monaco-editor/esm/vs/editor/editor.worker';
+// @ts-ignore
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import YamlWorker from 'worker-loader!monaco-yaml/lib/esm/yaml.worker';
+
 const defaultSchemaUri = fs.readFileSync("/home/ruben/.local/share/webviz/webviz_schema.json", "utf-8");
-console.log(defaultSchemaUri);
+
+declare global {
+  interface Window {
+    MonacoEnvironment: Environment;
+  }
+}
+
+window.MonacoEnvironment = {
+  getWorker(moduleId, label) {
+    switch (label) {
+      case 'editorWorkerService':
+        return new EditorWorker();
+      case 'yaml':
+        return new YamlWorker();
+      default:
+        throw new Error(`Unknown label ${label}`);
+    }
+  },
+};
 
 const path = require("path");
 const app = require("@electron/remote").app;
@@ -24,8 +58,6 @@ function uriFromPath(_path: unknown): string {
     const pathName = path.resolve(_path).replace(/\\/g, "/");
     return encodeURI("file://" + ensureFirstBackSlash(pathName));
 }
-
-console.log(uriFromPath(path.join(appPath, "node_modules/monaco-editor/min/vs")));
 
 loader.config({ paths: { vs: uriFromPath(path.join(appPath, "node_modules/monaco-editor/min/vs")) } });
 
@@ -60,7 +92,7 @@ export const YamlEditor: React.FC<YamlEditorProps> = (props) => {
             completion: true,
             schemas: [
                 {
-                    fileMatch: ["monaco-yaml.yaml"],
+                    fileMatch: ['monaco-yaml.yaml'],
                     uri: defaultSchemaUri,
                 },
             ],
