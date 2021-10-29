@@ -26,6 +26,7 @@ const ModuleNotFoundPlugin = require("react-dev-utils/ModuleNotFoundPlugin");
 const ForkTsCheckerWebpackPlugin = require("react-dev-utils/ForkTsCheckerWebpackPlugin");
 const typescriptFormatter = require("react-dev-utils/typescriptFormatter");
 const ReactRefreshWebpackPlugin = require("@pmmmwh/react-refresh-webpack-plugin");
+const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
 
 const postcssNormalize = require("postcss-normalize");
 
@@ -361,6 +362,12 @@ module.exports = function (webpackEnv) {
                                 name: "static/media/[name].[hash:8].[ext]",
                             },
                         },
+                        {
+                            test: /schema\.json$/,
+                            type: "javascript/auto",
+                            include: paths.appSrc,
+                            loader: "file-loader",
+                        },
                         // "url" loader works like "file" loader except that it embeds assets
                         // smaller than specified limit in bytes as data URLs to avoid requests.
                         // A missing `test` is equivalent to a match.
@@ -522,6 +529,10 @@ module.exports = function (webpackEnv) {
             ],
         },
         plugins: [
+            new MonacoWebpackPlugin({
+                // available options are documented at https://github.com/Microsoft/monaco-editor-webpack-plugin#options
+                languages: ["yaml"],
+            }),
             // Generates an `index.html` file with the <script> injected.
             new HtmlWebpackPlugin(
                 Object.assign(

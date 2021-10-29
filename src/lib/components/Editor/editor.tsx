@@ -1,48 +1,45 @@
 import React from "react";
-import MonacoEditor, { Monaco, OnMount, loader } from "@monaco-editor/react";
+import MonacoEditor, { monaco, EditorDidMount, EditorWillMount } from "react-monaco-editor";
 
 import { setDiagnosticsOptions } from "monaco-yaml";
 
 import { useStore, StoreActions } from "../Store/store";
 
-import {
-  editor,
-  Environment,
-  languages,
-  Position,
-  Range,
-  Uri,
-} from 'monaco-editor/esm/vs/editor/editor.api';
+import { editor, Environment, languages, Position, Range, Uri } from "monaco-editor/esm/vs/editor/editor.api";
 
 import "./editor.css";
+
 import fs from "fs";
 
 // @ts-ignore
 // eslint-disable-next-line import/no-webpack-loader-syntax
-import EditorWorker from 'worker-loader!monaco-editor/esm/vs/editor/editor.worker';
+import EditorWorker from "worker-loader!monaco-editor/esm/vs/editor/editor.worker";
 // @ts-ignore
 // eslint-disable-next-line import/no-webpack-loader-syntax
-import YamlWorker from 'worker-loader!monaco-yaml/lib/esm/yaml.worker';
+import YamlWorker from "worker-loader!monaco-yaml/lib/esm/yaml.worker";
 
-const defaultSchemaUri = fs.readFileSync("/home/ruben/.local/share/webviz/webviz_schema.json", "utf-8");
+import defaultSchemaUri from "./webviz_schema.json";
+
+console.log(defaultSchemaUri);
 
 declare global {
-  interface Window {
-    MonacoEnvironment: Environment;
-  }
+    interface Window {
+        MonacoEnvironment: Environment;
+    }
 }
 
 window.MonacoEnvironment = {
-  getWorker(moduleId, label) {
-    switch (label) {
-      case 'editorWorkerService':
-        return new EditorWorker();
-      case 'yaml':
-        return new YamlWorker();
-      default:
-        throw new Error(`Unknown label ${label}`);
-    }
-  },
+    getWorker(moduleId, label) {
+        console.log(label);
+        switch (label) {
+            case "editorWorkerService":
+                return new EditorWorker();
+            case "yaml":
+                return new YamlWorker();
+            default:
+                throw new Error(`Unknown label ${label}`);
+        }
+    },
 };
 
 const path = require("path");
@@ -59,7 +56,7 @@ function uriFromPath(_path: unknown): string {
     return encodeURI("file://" + ensureFirstBackSlash(pathName));
 }
 
-loader.config({ paths: { vs: uriFromPath(path.join(appPath, "node_modules/monaco-editor/min/vs")) } });
+//loader.config({ paths: { vs: uriFromPath(path.join(appPath, "node_modules/monaco-editor/min/vs")) } });
 
 type YamlEditorProps = {};
 
@@ -69,7 +66,7 @@ export const YamlEditor: React.FC<YamlEditorProps> = (props) => {
     const [currentColumn, setCurrentColumn] = React.useState(0);
     const [currentSelection, setCurrentSelection] = React.useState<number | undefined>(undefined);
 
-    const editorRef = React.useRef<Monaco | null>(null);
+    const editorRef = React.useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
     const store = useStore();
 
@@ -79,11 +76,11 @@ export const YamlEditor: React.FC<YamlEditorProps> = (props) => {
         store.dispatch({ type: StoreActions.SetEditorValue, payload: { value: value } });
     };
 
-    const handleEditorDidMount: OnMount = (editor, monacoInstance) => {
-        editorRef.current = monacoInstance;
+    const handleEditorDidMount: EditorDidMount = (editor) => {
+        editorRef.current = editor;
     };
 
-    React.useEffect(() => {
+    const handleEditorWillMount: EditorWillMount = (monaco) => {
         setDiagnosticsOptions({
             validate: true,
             enableSchemaRequest: true,
@@ -92,20 +89,21 @@ export const YamlEditor: React.FC<YamlEditorProps> = (props) => {
             completion: true,
             schemas: [
                 {
-                    fileMatch: ['monaco-yaml.yaml'],
-                    uri: defaultSchemaUri,
+                    fileMatch: ["*"],
+                    uri: "file:///home/ruben/.local/share/webviz/webviz_schema.json",
                 },
             ],
         });
-    }, []);
+    };
 
     return (
         <div className="Editor">
             <MonacoEditor
-                defaultLanguage="yaml"
+                language="yaml"
                 defaultValue="// Get started"
                 className="YamlEditor"
-                onMount={handleEditorDidMount}
+                editorDidMount={handleEditorDidMount}
+                editorWillMount={handleEditorWillMount}
                 theme="vs"
                 onChange={() => {}}
                 options={{ tabSize: 2, insertSpaces: true }}
