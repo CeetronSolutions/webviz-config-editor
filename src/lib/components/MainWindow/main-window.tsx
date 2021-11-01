@@ -39,18 +39,6 @@ export const MainWindow: React.FC<MainWindowProps> = (props) => {
     return (
         <Router>
             <div className="MainWindow" ref={mainWindowRef}>
-                <AppBar position="relative" className="MenuBar" ref={appBarRef}>
-                    <Toolbar>
-                        <Button color="inherit">File</Button>
-                        <Button color="inherit">Edit</Button>
-                        <Typography variant="h6" component="div" style={{ flexGrow: 1, textAlign: "center" }}>
-                            Webviz Config Editor
-                        </Typography>
-                        <IconButton onClick={colorMode.toggleColorMode} color="inherit">
-                            {theme.palette.mode === "dark" ? <Brightness7 /> : <Brightness4 />}
-                        </IconButton>
-                    </Toolbar>
-                </AppBar>
                 <div className="ContentWrapper">
                     <div className="TabMenu" style={{ backgroundColor: theme.palette.background.paper }}>
                         <Route

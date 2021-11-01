@@ -78,6 +78,7 @@ export const YamlEditor: React.FC<YamlEditorProps> = (props) => {
 
     const handleEditorDidMount: EditorDidMount = (editor) => {
         editorRef.current = editor;
+        editor.updateOptions({ quickSuggestions: { other: true, strings: true } });
     };
 
     const handleEditorWillMount: EditorWillMount = (monaco) => {
