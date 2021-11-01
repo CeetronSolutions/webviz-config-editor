@@ -19,6 +19,7 @@
         "@testing-library/user-event": "^12.8.3",
         "@types/electron-devtools-installer": "^2.2.0",
         "@types/jest": "^26.0.24",
+        "@types/js-yaml": "^4.0.4",
         "@types/node": "^12.20.33",
         "@types/react": "^17.0.30",
         "@types/react-dom": "^17.0.9",
@@ -59,9 +60,9 @@
         "jest-watch-typeahead": "0.6.1",
         "js-yaml": "^3.14.1",
         "mini-css-extract-plugin": "0.11.3",
-        "monaco-editor": "0.25.2",
+        "monaco-editor": "^0.25.2",
         "monaco-editor-webpack-plugin": "^5.0.0",
-        "monaco-yaml": "3.0.1",
+        "monaco-yaml": "^3.0.1",
         "optimize-css-assets-webpack-plugin": "5.0.4",
         "pnp-webpack-plugin": "1.6.4",
         "postcss-flexbugs-fixes": "4.2.1",
@@ -89,10 +90,10 @@
         "web-vitals": "^1.1.2",
         "webpack": "4.44.2",
         "webpack-dev-server": "3.11.1",
-        "webpack-manifest-plugin": "2.2.0",
-        "workbox-webpack-plugin": "5.1.4",
+        "webpack-manifest-plugin": "^2.2.0",
+        "workbox-webpack-plugin": "^5.1.4",
         "worker-loader": "^3.0.8",
-        "yaml-language-server": "0.22.0"
+        "yaml-language-server": "^0.22.0"
     },
     "scripts": {
         "postinstall": "electron-builder install-app-deps",

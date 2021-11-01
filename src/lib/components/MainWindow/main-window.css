@@ -2,6 +2,8 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
+    height: 100vh;
+    width: 100vw;
 }
 
 .MenuBar {
@@ -14,7 +16,8 @@
     display: flex;
     flex-direction: row;
     align-items: stretch;
-    height: calc(100vh - 100px);
+    height: 100vh;
+    width: 100vw;
 }
 
 .TabMenu {
@@ -24,6 +27,7 @@
     border-right: 1px #ccc solid;
     z-index: 10;
     background-color: #ccc;
+    height: 100%;
 }
 
 .TabMenu .MuiTab-root {

@@ -1,0 +1,15 @@
+.ResizablePanelsWrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    width: 100%;
+}
+
+.ResizeDragBar {
+    cursor: ew-resize;
+    width: 2px;
+}
+
+.ResizablePanel {
+    flex-grow: 4;
+}

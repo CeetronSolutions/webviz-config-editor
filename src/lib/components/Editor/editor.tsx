@@ -58,9 +58,9 @@ function uriFromPath(_path: unknown): string {
 
 //loader.config({ paths: { vs: uriFromPath(path.join(appPath, "node_modules/monaco-editor/min/vs")) } });
 
-type YamlEditorProps = {};
+type EditorProps = {};
 
-export const YamlEditor: React.FC<YamlEditorProps> = (props) => {
+export const Editor: React.FC<EditorProps> = (props) => {
     const [fontSize, setFontSize] = React.useState(1);
     const [currentLine, setCurrentLine] = React.useState(0);
     const [currentColumn, setCurrentColumn] = React.useState(0);
@@ -78,8 +78,14 @@ export const YamlEditor: React.FC<YamlEditorProps> = (props) => {
 
     const handleEditorDidMount: EditorDidMount = (editor) => {
         editorRef.current = editor;
-        editor.updateOptions({ quickSuggestions: { other: true, strings: true } });
     };
+
+    React.useEffect(() => {
+        if (!editorRef || !editorRef.current) {
+            return;
+        }
+        editorRef.current.updateOptions({ fontSize: 12 * fontSize });
+    }, [fontSize, editorRef]);
 
     const handleEditorWillMount: EditorWillMount = (monaco) => {
         setDiagnosticsOptions({
@@ -106,8 +112,9 @@ export const YamlEditor: React.FC<YamlEditorProps> = (props) => {
                 editorDidMount={handleEditorDidMount}
                 editorWillMount={handleEditorWillMount}
                 theme="vs"
-                onChange={() => {}}
-                options={{ tabSize: 2, insertSpaces: true }}
+                onChange={(value: string) => handleChange(value)}
+                options={{ tabSize: 2, insertSpaces: true, quickSuggestions: { other: true, strings: true } }}
+                width="100%"
             />
             <div className="EditorSettings">
                 <select value={fontSize} onChange={(event) => setFontSize(parseFloat(event.target.value))}>

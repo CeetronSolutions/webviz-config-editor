@@ -1,4 +1,11 @@
 .LivePreview {
     background-color: white;
-    flex-grow: 4;
+    display: block;
+    height: 100%;
+}
+.LivePreview__Title {
+    background-color: grey;
+    text-align: center;
+    padding: 8px;
+    display: block;
 }

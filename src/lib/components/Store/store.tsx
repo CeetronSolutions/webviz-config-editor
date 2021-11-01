@@ -83,6 +83,12 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
                 settings: newSettings,
             };
             break;
+        case StoreActions.SetEditorValue:
+            return {
+                ...state,
+                editorValue: action.payload.value,
+            };
+            break;
         case StoreActions.SetJsonSchema:
             return {
                 ...state,

@@ -1,9 +1,8 @@
 .Editor {
-    padding-top: 8px;
-    background-color: #2f3129;
     display: flex;
     flex-direction: column;
-    flex-grow: 4;
+    overflow: auto;
+    height: 100%;
 }
 
 .EditorInput {
