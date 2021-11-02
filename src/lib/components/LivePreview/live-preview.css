@@ -9,3 +9,11 @@
     padding: 8px;
     display: block;
 }
+
+.LivePreview__Menu {
+    position: relative;
+}
+
+.LivePreview__MenuWrapper {
+    position: absolute;
+}

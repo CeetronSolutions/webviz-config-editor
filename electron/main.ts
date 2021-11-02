@@ -8,8 +8,12 @@ let win: BrowserWindow | null = null;
 
 initialize();
 
+console.log(__dirname);
+
 function createWindow() {
     win = new BrowserWindow({
+        title: "Webviz Config Editor",
+        icon: __dirname + "/../../public/webviz.ico",
         width: 800,
         height: 600,
         webPreferences: {

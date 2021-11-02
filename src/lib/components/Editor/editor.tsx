@@ -1,5 +1,6 @@
 import React from "react";
 import MonacoEditor, { monaco, EditorDidMount, EditorWillMount } from "react-monaco-editor";
+import useSize from "@react-hook/size";
 
 import { setDiagnosticsOptions } from "monaco-yaml";
 
@@ -9,18 +10,12 @@ import { editor, Environment, languages, Position, Range, Uri } from "monaco-edi
 
 import "./editor.css";
 
-import fs from "fs";
-
 // @ts-ignore
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import EditorWorker from "worker-loader!monaco-editor/esm/vs/editor/editor.worker";
 // @ts-ignore
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import YamlWorker from "worker-loader!monaco-yaml/lib/esm/yaml.worker";
-
-import defaultSchemaUri from "./webviz_schema.json";
-
-console.log(defaultSchemaUri);
 
 declare global {
     interface Window {
@@ -30,7 +25,6 @@ declare global {
 
 window.MonacoEnvironment = {
     getWorker(moduleId, label) {
-        console.log(label);
         switch (label) {
             case "editorWorkerService":
                 return new EditorWorker();
@@ -66,9 +60,11 @@ export const Editor: React.FC<EditorProps> = (props) => {
     const [currentColumn, setCurrentColumn] = React.useState(0);
     const [currentSelection, setCurrentSelection] = React.useState<number | undefined>(undefined);
 
-    const editorRef = React.useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+    const monacoRef = React.useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+    const editorRef = React.useRef<HTMLDivElement | null>(null);
 
     const store = useStore();
+    const [totalWidth, totalHeight] = useSize(editorRef);
 
     const fontSizes = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2];
 
@@ -77,15 +73,15 @@ export const Editor: React.FC<EditorProps> = (props) => {
     };
 
     const handleEditorDidMount: EditorDidMount = (editor) => {
-        editorRef.current = editor;
+        monacoRef.current = editor;
     };
 
     React.useEffect(() => {
-        if (!editorRef || !editorRef.current) {
+        if (!monacoRef || !monacoRef.current) {
             return;
         }
-        editorRef.current.updateOptions({ fontSize: 12 * fontSize });
-    }, [fontSize, editorRef]);
+        monacoRef.current.updateOptions({ fontSize: 12 * fontSize });
+    }, [fontSize, monacoRef]);
 
     const handleEditorWillMount: EditorWillMount = (monaco) => {
         setDiagnosticsOptions({
@@ -104,17 +100,17 @@ export const Editor: React.FC<EditorProps> = (props) => {
     };
 
     return (
-        <div className="Editor">
+        <div className="Editor" ref={editorRef}>
             <MonacoEditor
                 language="yaml"
-                defaultValue="// Get started"
+                defaultValue=""
                 className="YamlEditor"
                 editorDidMount={handleEditorDidMount}
                 editorWillMount={handleEditorWillMount}
                 theme="vs"
                 onChange={(value: string) => handleChange(value)}
                 options={{ tabSize: 2, insertSpaces: true, quickSuggestions: { other: true, strings: true } }}
-                width="100%"
+                width={totalWidth}
             />
             <div className="EditorSettings">
                 <select value={fontSize} onChange={(event) => setFontSize(parseFloat(event.target.value))}>

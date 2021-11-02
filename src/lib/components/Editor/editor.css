@@ -1,7 +1,7 @@
 .Editor {
     display: flex;
     flex-direction: column;
-    overflow: auto;
+    overflow: visible;
     height: 100%;
 }
 

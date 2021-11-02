@@ -12,57 +12,56 @@ type Point = {
 };
 
 export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
-    const [isDragging, setIsDragging] = React.useState<boolean>(false);
+    const [isDragging, setIsDragging] = React.useState<boolean>();
     const [currentIndex, setCurrentIndex] = React.useState<number>(0);
     const [initialPosition, setInitialPosition] = React.useState<Point>({ x: 0, y: 0 });
     const [sizes, setSizes] = React.useState<number[]>([]);
+    const resizablePanelsRef = React.useRef<HTMLDivElement | null>(null);
     const resizablePanelRefs = React.useRef<(HTMLDivElement | null)[]>([]);
 
-    const resize = React.useCallback(
-        (event: MouseEvent) => {
+    React.useEffect(() => {
+        setSizes(props.children.map((_) => 100 / props.children.length));
+        resizablePanelRefs.current = resizablePanelRefs.current.slice(0, props.children.length);
+    }, [props.children]);
+
+    const startResize = React.useCallback(
+        (event: React.MouseEvent<HTMLDivElement, MouseEvent>, index: number) => {
+            window.addEventListener("selectstart", (e) => e.preventDefault());
+            setCurrentIndex(index);
+            setInitialPosition({ x: event.clientX, y: event.clientY });
+            setIsDragging(true);
+        },
+        [setCurrentIndex, setIsDragging, setInitialPosition]
+    );
+
+    React.useEffect(() => {
+        const resize = (event: MouseEvent) => {
+            if (!isDragging) {
+                return;
+            }
+            const totalSize = resizablePanelsRef.current?.getBoundingClientRect().width || 0;
             const firstElement = resizablePanelRefs.current[currentIndex];
             const secondElement = resizablePanelRefs.current[currentIndex + 1];
             if (firstElement && secondElement) {
                 const newSizes = sizes.map((size, index) => {
                     if (index === currentIndex) {
-                        return event.clientX - firstElement.getBoundingClientRect().left;
+                        const newSize = event.clientX - firstElement.getBoundingClientRect().left;
+                        return (newSize / totalSize) * 100;
                     } else if (index === currentIndex + 1) {
-                        return (
-                            secondElement.getBoundingClientRect().width +
-                            (secondElement.getBoundingClientRect().left - event.clientX)
-                        );
+                        const newSize = secondElement.getBoundingClientRect().right - event.clientX;
+                        return (newSize / totalSize) * 100;
+                    } else {
+                        return size;
                     }
-                });
+                }) as number[];
+                setSizes(newSizes);
             }
-        },
-        [isDragging]
-    );
+        };
 
-    const startResize = React.useCallback(
-        (event: React.MouseEvent<HTMLDivElement, MouseEvent>, index: number) => {
-            console.log("start resize");
-            window.addEventListener("selectstart", (e) => e.preventDefault());
-            setIsDragging(true);
-            console.log(isDragging);
-            setCurrentIndex(index);
-            setInitialPosition({ x: event.clientX, y: event.clientY });
-        },
-        [setCurrentIndex, setIsDragging, setInitialPosition]
-    );
-
-    const stopResize = (event: MouseEvent) => {
-        window.removeEventListener("selectstart", (e) => e.preventDefault());
-        setIsDragging(false);
-        console.log("stop resize");
-    };
-
-    React.useEffect(() => {
-        setSizes(props.children.map((_) => 100 / props.children.length));
-        resizablePanelRefs.current = resizablePanelRefs.current.slice(0, props.children.length);
-        console.log("changed");
-    }, [props.children]);
-
-    React.useEffect(() => {
+        const stopResize = (event: MouseEvent) => {
+            window.removeEventListener("selectstart", (e) => e.preventDefault());
+            setIsDragging(false);
+        };
         document.addEventListener("mousemove", resize);
         document.addEventListener("mouseup", stopResize);
 
@@ -70,17 +69,17 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
             document.removeEventListener("mousemove", resize);
             document.removeEventListener("mouseup", stopResize);
         };
-    }, []);
+    }, [isDragging, setIsDragging, sizes, setSizes]);
 
     return (
-        <div className="ResizablePanelsWrapper">
+        <div className="ResizablePanelsWrapper" ref={resizablePanelsRef}>
             {props.children.map((el: React.ReactNode, index: number) => (
                 <>
                     <div
                         className="ResizablePanel"
                         ref={(el) => (resizablePanelRefs.current[index] = el)}
                         key={`resizable-panel-${index}`}
-                        style={{ width: sizes[index] }}
+                        style={{ width: sizes[index] + "%" }}
                     >
                         {el}
                     </div>
