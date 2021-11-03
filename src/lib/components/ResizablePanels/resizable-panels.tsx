@@ -79,7 +79,7 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
                         className="ResizablePanel"
                         ref={(el) => (resizablePanelRefs.current[index] = el)}
                         key={`resizable-panel-${index}`}
-                        style={{ width: sizes[index] + "%" }}
+                        style={{ width: `calc(${sizes[index]}% - 3px)` }}
                     >
                         {el}
                     </div>

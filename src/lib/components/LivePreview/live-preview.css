@@ -1,19 +1,43 @@
 .LivePreview {
     background-color: white;
-    display: block;
+    display: flex;
+    flex-direction: column;
     height: 100%;
+    align-items: stretch;
 }
+
 .LivePreview__Title {
-    background-color: grey;
+    background-color: #292929;
+    color: white;
     text-align: center;
     padding: 8px;
     display: block;
 }
 
-.LivePreview__Menu {
-    position: relative;
+.LivePreview__Content {
+    display: flex;
+    align-items: stretch;
+    flex-direction: row;
+    flex-grow: 4;
 }
 
 .LivePreview__MenuWrapper {
     position: absolute;
+}
+
+.LivePreview__Page {
+    display: block;
+    margin: 16px;
+    flex-grow: 4;
+}
+
+.LivePreview__Plugin {
+    background-color: #fefefe;
+    border-color: #ccc;
+    border-radius: 8px;
+    border-style: solid;
+    border-width: 1px;
+    padding: 16px;
+    margin: 8px;
+    display: block;
 }

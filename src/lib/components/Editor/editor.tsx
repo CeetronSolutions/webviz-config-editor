@@ -83,6 +83,13 @@ export const Editor: React.FC<EditorProps> = (props) => {
         monacoRef.current.updateOptions({ fontSize: 12 * fontSize });
     }, [fontSize, monacoRef]);
 
+    React.useEffect(() => {
+        if (!monacoRef || !monacoRef.current) {
+            return;
+        }
+        monacoRef.current.setValue(store.state.editorValue);
+    }, [store.state.editorValue]);
+
     const handleEditorWillMount: EditorWillMount = (monaco) => {
         setDiagnosticsOptions({
             validate: true,
@@ -118,11 +125,6 @@ export const Editor: React.FC<EditorProps> = (props) => {
                         <option value={size} key={size}>{`${Math.floor(size * 100)} %`}</option>
                     ))}
                 </select>
-                <div className="EditorInfo">
-                    {`Ln ${currentLine + 1}, Col ${currentColumn + 1} ${
-                        currentSelection ? `(${currentSelection} selected)` : ""
-                    }`}
-                </div>
             </div>
         </div>
     );

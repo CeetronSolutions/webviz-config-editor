@@ -4,6 +4,8 @@ import { Setting, Settings, compressSettings } from "../../utils/settings";
 import { makeRequest, RequestMethod } from "../../utils/api";
 import { createGenericContext } from "../../utils/generic-context";
 import { NotificationType, useNotifications } from "../Notifications";
+import { ipcRenderer } from "electron";
+import fs from "fs";
 
 type ActionMap<M extends { [index: string]: { [key: string]: string | number | Setting[] | object } }> = {
     [Key in keyof M]: M[Key] extends undefined
@@ -112,6 +114,24 @@ export const StoreProvider: React.FC = (props) => {
     const [state, dispatch] = React.useReducer(StoreReducer, initialState, StoreReducerInit);
 
     const notifications = useNotifications();
+
+    React.useEffect(() => {
+        ipcRenderer.on("FILE_OPEN", (event, args) => {
+            try {
+                console.log(args);
+                const fileContent = fs.readFileSync(args[0]);
+
+                dispatch({
+                    type: StoreActions.SetEditorValue,
+                    payload: {
+                        value: fileContent.toString(),
+                    },
+                });
+            } catch (e) {
+                console.log("error");
+            }
+        });
+    }, [dispatch]);
 
     /*
     React.useEffect(() => {
