@@ -1,7 +1,6 @@
 import React from "react";
 import jsYaml from "js-yaml";
 import { uuid } from "uuidv4";
-import Frame from "react-frame-component";
 import { Menu } from "@webviz/core-components";
 import {
     PropertyNavigationType,
@@ -15,6 +14,7 @@ import { useStore } from "../Store";
 
 import "./live-preview.css";
 import { ErrorBoundary } from "../ErrorBoundary";
+import { PluginVisualizer } from "../PluginVisualizer";
 
 type LivePreviewProps = {};
 
@@ -110,28 +110,17 @@ export const LivePreview: React.FC<LivePreviewProps> = (props) => {
             <div className="LivePreview__Title">{yamlValue["title"] || <i>No title defined yet</i>}</div>
             <div className="LivePreview__Content">
                 <div className="LivePreview__Menu">
-                    <MenuWrapper setProps={setCurrentPage} navigationItems={navigationItems} menuBarPosition="left" />
+                    <MenuWrapper
+                        setProps={setCurrentPage}
+                        navigationItems={navigationItems}
+                        menuBarPosition="left"
+                        inline={true}
+                    />
                 </div>
                 <div className="LivePreview__Page">
                     {currentPage.url in pages &&
                         pages[currentPage.url].map((plugin: { [key: string]: any }) => (
-                            <div className="LivePreview__Plugin">
-                                {Object.keys(plugin).map((el) => (
-                                    <>
-                                        <h3>{el}</h3>
-                                        {Object.keys(plugin[el]).map((prop) => (
-                                            <table>
-                                                <tr>
-                                                    <td>
-                                                        <strong>{prop}: </strong>
-                                                    </td>
-                                                    <td>{plugin[el][prop]}</td>
-                                                </tr>
-                                            </table>
-                                        ))}
-                                    </>
-                                ))}
-                            </div>
+                            <PluginVisualizer pluginData={plugin} />
                         ))}
                 </div>
             </div>

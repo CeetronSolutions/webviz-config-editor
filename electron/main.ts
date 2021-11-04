@@ -8,6 +8,8 @@ let win: BrowserWindow | null = null;
 
 initialize();
 
+const appTitle = "Webviz Config Editor";
+
 function createWindow() {
     const iconPath = path.join(__dirname, "..", "..", "public", "wce-icon.png");
 
@@ -55,6 +57,10 @@ function createWindow() {
         win.webContents.openDevTools();
     }
 
+    ipcMain.on("APP_TITLE_CHANGE", (event, arg) => {
+        win?.setTitle(`${arg} - ${appTitle}`);
+    });
+
     const isMac = process.platform === "darwin";
 
     const template = [
@@ -92,14 +98,13 @@ function createWindow() {
                         dialog
                             .showOpenDialog({
                                 properties: ["openFile"],
+                                filters: [{ name: "Webviz Config Files", extensions: ["yml", "yaml"] }],
                             })
                             .then(function (fileObj) {
-                                // the fileObj has two props
                                 if (!fileObj.canceled && win) {
                                     win.webContents.send("FILE_OPEN", fileObj.filePaths);
                                 }
                             })
-                            // should always handle the error yourself, later Electron release might crash if you don't
                             .catch(function (err) {
                                 console.error(err);
                             });

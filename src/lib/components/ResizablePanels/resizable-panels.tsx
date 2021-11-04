@@ -1,3 +1,4 @@
+import useSize from "@react-hook/size";
 import React from "react";
 
 import "./resizable-panels.css";
@@ -18,6 +19,8 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
     const [sizes, setSizes] = React.useState<number[]>([]);
     const resizablePanelsRef = React.useRef<HTMLDivElement | null>(null);
     const resizablePanelRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+
+    const [totalWidth, totalHeight] = useSize(resizablePanelsRef);
 
     React.useEffect(() => {
         setSizes(props.children.map((_) => 100 / props.children.length));
@@ -73,6 +76,10 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
 
     return (
         <div className="ResizablePanelsWrapper" ref={resizablePanelsRef}>
+            <div
+                className="ResizablePanelsOverlay"
+                style={{ width: totalWidth, height: totalHeight, display: isDragging ? "block" : "none" }}
+            />
             {props.children.map((el: React.ReactNode, index: number) => (
                 <>
                     <div
@@ -85,7 +92,7 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
                     </div>
                     {index < props.children.length - 1 && (
                         <div
-                            className="ResizeDragBar"
+                            className={`ResizeDragBar${isDragging ? " ResizeDragBar--active" : ""}`}
                             key={`resizable-panel-drag-bar-${index}`}
                             onMouseDown={(e) => startResize(e, index)}
                         ></div>

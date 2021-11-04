@@ -40,7 +40,7 @@ export const MenuWrapper: React.FC<MenuProps> = (props) => {
                     filterWrapper.style.display = "none";
                 }
             }
-        }, 100);
+        }, 0);
     }, [menuWrapperRef]);
 
     return (

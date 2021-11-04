@@ -1,4 +1,5 @@
 import React from "react";
+import path from "path";
 
 import { Setting, Settings, compressSettings } from "../../utils/settings";
 import { makeRequest, RequestMethod } from "../../utils/api";
@@ -6,6 +7,7 @@ import { createGenericContext } from "../../utils/generic-context";
 import { NotificationType, useNotifications } from "../Notifications";
 import { ipcRenderer } from "electron";
 import fs from "fs";
+import { editor, Uri } from "monaco-editor";
 
 type ActionMap<M extends { [index: string]: { [key: string]: string | number | Setting[] | object } }> = {
     [Key in keyof M]: M[Key] extends undefined
@@ -22,12 +24,14 @@ export enum StoreActions {
     SetSettings = "SET_SETTINGS",
     SetSetting = "SET_SETTING",
     SetEditorValue = "SET_EDITOR_VALUE",
+    SetEditorModel = "SET_EDITOR_MODEL",
     SetAbsPathToJsonSchema = "SET_JSON_SCHEMA",
     SetJsonSchema = "SET_JSON_SCHEMA",
 }
 
 export type StoreState = {
     editorValue: string;
+    editorModel: editor.IModel;
     absPathToJsonSchema: string;
     settings: Setting[];
     jsonSchema: object;
@@ -44,6 +48,9 @@ type Payload = {
     [StoreActions.SetEditorValue]: {
         value: string;
     };
+    [StoreActions.SetEditorModel]: {
+        filePath: string;
+    };
     [StoreActions.SetJsonSchema]: {
         schema: object;
     };
@@ -53,6 +60,7 @@ export type Actions = ActionMap<Payload>[keyof ActionMap<Payload>];
 
 const initialState: StoreState = {
     editorValue: "",
+    editorModel: editor.createModel("", "yaml", undefined),
     absPathToJsonSchema: "",
     settings: compressSettings(Settings),
     jsonSchema: {},
@@ -61,6 +69,7 @@ const initialState: StoreState = {
 export const StoreReducerInit = (initialState: StoreState): StoreState => {
     return {
         editorValue: initialState.editorValue,
+        editorModel: initialState.editorModel,
         absPathToJsonSchema: initialState.absPathToJsonSchema,
         settings: initialState.settings,
         jsonSchema: {},
@@ -85,6 +94,17 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
                 settings: newSettings,
             };
             break;
+        case StoreActions.SetEditorModel:
+            try {
+                const fileContent = fs.readFileSync(action.payload.filePath).toString();
+                ipcRenderer.send("APP_TITLE_CHANGE", path.basename(action.payload.filePath));
+                return {
+                    ...state,
+                    editorModel: editor.createModel(fileContent, "yaml", Uri.parse(action.payload.filePath)),
+                };
+            } catch (e) {
+                return state;
+            }
         case StoreActions.SetEditorValue:
             return {
                 ...state,
@@ -117,19 +137,12 @@ export const StoreProvider: React.FC = (props) => {
 
     React.useEffect(() => {
         ipcRenderer.on("FILE_OPEN", (event, args) => {
-            try {
-                console.log(args);
-                const fileContent = fs.readFileSync(args[0]);
-
-                dispatch({
-                    type: StoreActions.SetEditorValue,
-                    payload: {
-                        value: fileContent.toString(),
-                    },
-                });
-            } catch (e) {
-                console.log("error");
-            }
+            dispatch({
+                type: StoreActions.SetEditorModel,
+                payload: {
+                    filePath: args[0],
+                },
+            });
         });
     }, [dispatch]);
 

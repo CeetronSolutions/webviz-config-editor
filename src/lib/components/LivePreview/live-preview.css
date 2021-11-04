@@ -23,12 +23,14 @@
 
 .LivePreview__MenuWrapper {
     position: absolute;
+    user-select: none;
 }
 
 .LivePreview__Page {
     display: block;
     margin: 16px;
     flex-grow: 4;
+    overflow: scroll;
 }
 
 .LivePreview__Plugin {

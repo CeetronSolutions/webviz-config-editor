@@ -87,8 +87,8 @@ export const Editor: React.FC<EditorProps> = (props) => {
         if (!monacoRef || !monacoRef.current) {
             return;
         }
-        monacoRef.current.setValue(store.state.editorValue);
-    }, [store.state.editorValue]);
+        monacoRef.current.setValue(store.state.editorModel.getValue());
+    }, [store.state.editorModel]);
 
     const handleEditorWillMount: EditorWillMount = (monaco) => {
         setDiagnosticsOptions({

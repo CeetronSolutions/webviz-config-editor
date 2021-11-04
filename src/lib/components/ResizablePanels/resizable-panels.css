@@ -3,12 +3,30 @@
     flex-direction: row;
     align-items: stretch;
     width: 100%;
+    position: relative;
+}
+
+.ResizablePanelsOverlay {
+    background-color: transparent;
+    z-index: 1100;
+    position: absolute;
+    cursor: ew-resize;
 }
 
 .ResizeDragBar {
     cursor: ew-resize;
     width: 2px;
     border-left: 1px #cccccc solid;
+}
+
+.ResizeDragBar:hover {
+    border-color: 1px rgb(33, 92, 255);
+    background-color: rgb(33, 92, 255);
+}
+
+.ResizeDragBar--active {
+    border-color: 1px rgb(33, 92, 255);
+    background-color: rgb(33, 92, 255);
 }
 
 .ResizablePanel {
