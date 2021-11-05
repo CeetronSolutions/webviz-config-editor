@@ -33,12 +33,6 @@ export const MenuWrapper: React.FC<MenuProps> = (props) => {
                 if (pinButton) {
                     pinButton.style.display = "none";
                 }
-                const filterWrapper = menuWrapperRef.current.getElementsByClassName("Menu__FilterInputWrapper")[0] as
-                    | HTMLElement
-                    | undefined;
-                if (filterWrapper) {
-                    filterWrapper.style.display = "none";
-                }
             }
         }, 0);
     }, [menuWrapperRef]);
@@ -49,7 +43,7 @@ export const MenuWrapper: React.FC<MenuProps> = (props) => {
             className="MenuWrapper"
             style={{ width: width, visibility: visible ? "visible" : "hidden" }}
         >
-            <Menu initiallyPinned={true} {...props} />
+            <Menu initiallyPinned={true} showFilterInput={false} {...props} />
         </div>
     );
 };
