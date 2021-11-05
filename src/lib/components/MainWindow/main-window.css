@@ -26,10 +26,24 @@
     width: 80px;
     left: 0;
     top: 64px;
-    border-right: 1px #ccc solid;
+    border-right: 1px #111 solid;
     z-index: 10;
-    background-color: #ccc;
+    background-color: #333333;
     height: 100%;
+}
+
+.TabMenu .MuiButtonBase-root {
+    color: #999;
+}
+
+.TabMenu .Mui-selected {
+    color: white !important;
+}
+
+.TabMenu .MuiTabs-indicator {
+    background-color: white !important;
+    left: 0;
+    width: 3px;
 }
 
 .TabMenu .MuiTab-root {

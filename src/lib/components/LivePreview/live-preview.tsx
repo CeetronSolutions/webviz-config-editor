@@ -82,7 +82,6 @@ export const LivePreview: React.FC<LivePreviewProps> = (props) => {
     const [yamlValue, setYamlValue] = React.useState<Yaml>({});
     const [navigationItems, setNavigationItems] = React.useState<PropertyNavigationType>([]);
     const [pages, setPages] = React.useState<{ [key: string]: any }>({});
-    const [renderResult, setRenderResult] = React.useState<string>("");
     const [currentPage, setCurrentPage] = React.useState<MenuReturnProps>({
         url: "",
     });
@@ -90,20 +89,25 @@ export const LivePreview: React.FC<LivePreviewProps> = (props) => {
 
     React.useEffect(() => {
         try {
-            const obj = jsYaml.load(store.state.editorValue);
-            if (obj && typeof obj === "object") {
-                setYamlValue(obj as Yaml);
-                if ("layout" in obj) {
-                    const [items, pages] = parseMenu((obj as Yaml)["layout"] as object[]);
-                    setNavigationItems(items);
-                    setPages(pages);
-                    console.log(items);
-                }
+            const obj = jsYaml.load(store.state.currentEditorContent);
+            if (obj === null || obj === undefined || typeof obj !== "object") {
+                setYamlValue({});
+                setNavigationItems([]);
+                setPages([]);
+                return;
+            }
+            setYamlValue(obj as Yaml);
+            if (obj && "layout" in obj) {
+                const [items, pages] = parseMenu((obj as Yaml)["layout"] as object[]);
+                setNavigationItems(items);
+                setPages(pages);
             }
         } catch (e) {
-            void 0;
+            setYamlValue({});
+            setNavigationItems([]);
+            setPages([]);
         }
-    }, [store.state.editorValue, setNavigationItems, setPages]);
+    }, [store.state.currentEditorContent]);
 
     return (
         <div className="LivePreview">

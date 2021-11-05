@@ -17,40 +17,40 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
         if (typeof data === "string") {
             return data;
         } else if (typeof data === "object" && Object.keys(data).length > 0) {
-            if (
-                Object.keys(data)[0] === "BannerImage" &&
-                typeof data["BannerImage"] === "object" &&
-                Object.keys(data["BannerImage"]).includes("image")
-            ) {
-                return (
-                    <img
-                        src={Uri.parse(
-                            path.join(
-                                path.dirname(store.state.editorModel.uri.toString()),
-                                data["BannerImage"]["image"]
-                            )
-                        ).toString()}
-                        alt=""
-                    />
-                );
-            }
-            if (
-                Object.keys(data)[0] === "Markdown" &&
-                typeof data["Markdown"] === "object" &&
-                Object.keys(data["Markdown"]).includes("markdown_file")
-            ) {
-                return (
-                    <ReactMarkdown>
-                        {fs
-                            .readFileSync(
-                                path.join(
-                                    path.dirname(store.state.editorModel.uri.toString().replace("file://", "")),
-                                    data["Markdown"]["markdown_file"]
+            const file = store.state.files.find((el) => el.uuid === store.state.activeFileUuid);
+            if (file) {
+                if (
+                    Object.keys(data)[0] === "BannerImage" &&
+                    typeof data["BannerImage"] === "object" &&
+                    Object.keys(data["BannerImage"]).includes("image")
+                ) {
+                    return (
+                        <img
+                            src={Uri.parse(
+                                path.join(path.dirname(file.editorModel.uri.toString()), data["BannerImage"]["image"])
+                            ).toString()}
+                            alt=""
+                        />
+                    );
+                }
+                if (
+                    Object.keys(data)[0] === "Markdown" &&
+                    typeof data["Markdown"] === "object" &&
+                    Object.keys(data["Markdown"]).includes("markdown_file")
+                ) {
+                    return (
+                        <ReactMarkdown>
+                            {fs
+                                .readFileSync(
+                                    path.join(
+                                        path.dirname(file.editorModel.uri.toString().replace("file://", "")),
+                                        data["Markdown"]["markdown_file"]
+                                    )
                                 )
-                            )
-                            .toString()}
-                    </ReactMarkdown>
-                );
+                                .toString()}
+                        </ReactMarkdown>
+                    );
+                }
             }
         }
         return Object.keys(data).map((el) => (

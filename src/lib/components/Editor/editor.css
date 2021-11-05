@@ -3,6 +3,7 @@
     flex-direction: column;
     overflow: visible;
     height: 100%;
+    background-color: rgb(32, 32, 32);
 }
 
 .EditorInput {
@@ -21,4 +22,9 @@
     color: white;
     text-align: right;
     flex-grow: 4;
+}
+
+.Editor__NoModels {
+    color: #eee;
+    margin: auto;
 }

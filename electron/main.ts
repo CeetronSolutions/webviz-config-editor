@@ -10,14 +10,35 @@ initialize();
 
 const appTitle = "Webviz Config Editor";
 
+function openFile() {
+    dialog
+        .showOpenDialog({
+            properties: ["openFile"],
+            filters: [
+                {
+                    name: "Webviz Config Files",
+                    extensions: ["yml", "yaml"],
+                },
+            ],
+        })
+        .then(function (fileObj) {
+            if (!fileObj.canceled && win) {
+                win.webContents.send("FILE_OPEN", fileObj.filePaths);
+            }
+        })
+        .catch(function (err) {
+            console.error(err);
+        });
+}
+
 function createWindow() {
     const iconPath = path.join(__dirname, "..", "..", "public", "wce-icon.png");
 
     win = new BrowserWindow({
         title: "Webviz Config Editor",
         icon: iconPath,
-        width: 800,
-        height: 600,
+        width: 1280,
+        height: 800,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
@@ -53,13 +74,11 @@ function createWindow() {
         .then((name) => console.log(`Added Extension:  ${name}`))
         .catch((err) => console.log("An error occurred: ", err));
 
+    /**
     if (isDev) {
         win.webContents.openDevTools();
     }
-
-    ipcMain.on("APP_TITLE_CHANGE", (event, arg) => {
-        win?.setTitle(`${arg} - ${appTitle}`);
-    });
+    */
 
     const isMac = process.platform === "darwin";
 
@@ -90,24 +109,58 @@ function createWindow() {
                 {
                     label: "New File",
                     accelerator: "CmdOrCtrl+N",
+                    click() {
+                        if (win) {
+                            win.webContents.send("NEW_FILE");
+                        }
+                    },
+                },
+                {
+                    label: "New Window",
+                    accelerator: "CmdOrCtrl+N",
                 },
                 {
                     label: "Open File...",
                     accelerator: "CmdOrCtrl+O",
                     click() {
+                        openFile();
+                    },
+                },
+                {
+                    label: "Save",
+                    accelerator: "CmdOrCtrl+S",
+                    click() {
+                        if (win) {
+                            win.webContents.send("SAVE_FILE");
+                        }
+                    },
+                },
+                {
+                    label: "Save as...",
+                    accelerator: "CmdOrCtrl+Shift+S",
+                    click() {
                         dialog
-                            .showOpenDialog({
-                                properties: ["openFile"],
-                                filters: [{ name: "Webviz Config Files", extensions: ["yml", "yaml"] }],
+                            .showSaveDialog({
+                                title: "Save file as...",
+                                properties: ["createDirectory", "showOverwriteConfirmation"],
+                                filters: [
+                                    {
+                                        name: "Webviz Config Files",
+                                        extensions: ["yml", "yaml"],
+                                    },
+                                ],
                             })
                             .then(function (fileObj) {
-                                if (!fileObj.canceled && win) {
-                                    win.webContents.send("FILE_OPEN", fileObj.filePaths);
+                                if (!fileObj.canceled && win && fileObj.filePath) {
+                                    win.webContents.send("SAVE_FILE_AS", fileObj.filePath);
                                 }
                             })
                             .catch(function (err) {
                                 console.error(err);
                             });
+                        if (win) {
+                            win.webContents.send("SAVE_FILE_AS");
+                        }
                     },
                 },
                 isMac ? { role: "close" } : { role: "quit" },
@@ -179,6 +232,8 @@ function createWindow() {
 
     const menu = Menu.buildFromTemplate(template as Array<MenuItemConstructorOptions>);
     Menu.setApplicationMenu(menu);
+
+    ipcMain.on("FILE_OPEN", () => openFile());
 }
 
 app.on("ready", createWindow);

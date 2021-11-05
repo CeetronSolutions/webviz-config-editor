@@ -4,6 +4,7 @@ import { AppBar, Toolbar, Button, Tabs, Tab, Typography, IconButton } from "@mui
 import { Edit, PlayArrow, Settings, Brightness4, Brightness7 } from "@mui/icons-material";
 import { useTheme } from "@mui/material";
 import useSize from "@react-hook/size";
+import path from "path";
 
 import "./main-window.css";
 
@@ -14,6 +15,7 @@ import { Preferences } from "../Preferences/preferences";
 import { ResizablePanels } from "../ResizablePanels";
 
 import { Size } from "../../types/size";
+import { useStore } from "../Store/store";
 
 type MainWindowProps = {};
 
@@ -22,6 +24,7 @@ export const MainWindow: React.FC<MainWindowProps> = (props) => {
     const [editorSize, setEditorSize] = React.useState<Size>({ width: 0, height: 0 });
     const theme = useTheme();
     const colorMode = React.useContext(ColorModeContext);
+    const store = useStore();
 
     const mainWindowRef = React.useRef<HTMLDivElement | null>(null);
     const appBarRef = React.useRef<HTMLDivElement | null>(null);
@@ -35,33 +38,42 @@ export const MainWindow: React.FC<MainWindowProps> = (props) => {
         });
     }, [windowWidth, windowHeight, appBarHeight, appBarWidth]);
 
+    React.useEffect(() => {
+        const file = store.state.files.find((el) => el.uuid === store.state.activeFileUuid);
+        if (!file || file.editorModel.uri.toString() === "") {
+            return;
+        }
+        const filePath = file.editorModel.uri.path;
+        document.title = path.basename(filePath) + " - Webviz Config Editor";
+    }, [store.state.files, store.state.activeFileUuid]);
+
     const routes = ["/", "/play", "/settings"];
 
     return (
         <Router>
             <div className="MainWindow" ref={mainWindowRef}>
                 <div className="ContentWrapper">
-                    <div className="TabMenu" style={{ backgroundColor: theme.palette.background.paper }}>
+                    <div className="TabMenu">
                         <Route
                             path="/"
                             render={(history) => (
-                                <Tabs orientation="vertical" value={history.location.pathname}>
+                                <Tabs orientation="vertical" value={history.location.pathname} color="inherit">
                                     <Tab
-                                        icon={<Edit />}
+                                        icon={<Edit color="inherit" />}
                                         value={routes[0]}
                                         className="MenuTab"
                                         component={Link}
                                         to={routes[0]}
                                     />
                                     <Tab
-                                        icon={<PlayArrow />}
+                                        icon={<PlayArrow color="inherit" />}
                                         value={routes[1]}
                                         className="MenuTab"
                                         component={Link}
                                         to={routes[1]}
                                     />
                                     <Tab
-                                        icon={<Settings />}
+                                        icon={<Settings color="inherit" />}
                                         value={routes[2]}
                                         className="MenuTab"
                                         component={Link}

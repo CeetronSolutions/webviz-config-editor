@@ -19,6 +19,7 @@
     align-items: stretch;
     flex-direction: row;
     flex-grow: 4;
+    overflow: auto;
 }
 
 .LivePreview__MenuWrapper {
@@ -30,7 +31,6 @@
     display: block;
     margin: 16px;
     flex-grow: 4;
-    overflow: scroll;
 }
 
 .LivePreview__Plugin {
