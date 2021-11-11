@@ -4,6 +4,7 @@ import useSize from "@react-hook/size";
 import { Environment } from "monaco-editor/esm/vs/editor/editor.api";
 import { setDiagnosticsOptions } from "monaco-yaml";
 import { ipcRenderer } from "electron";
+import yaml from "yaml";
 
 import { useStore, StoreActions } from "../Store/store";
 
@@ -18,6 +19,7 @@ import YamlWorker from "worker-loader!monaco-yaml/lib/esm/yaml.worker";
 import { FileTabs } from "../FileTabs";
 import { FolderOpen, InsertDriveFile } from "@mui/icons-material";
 import { Button } from "@mui/material";
+import { YamlParser } from "../../utils/yaml-parser";
 
 declare global {
     interface Window {
@@ -40,9 +42,13 @@ window.MonacoEnvironment = {
 
 type EditorProps = {};
 
+const yamlParser = new YamlParser();
+
 export const Editor: React.FC<EditorProps> = (props) => {
     const [fontSize, setFontSize] = React.useState<number>(1);
     const [noModels, setNoModels] = React.useState<boolean>(false);
+    const [selection, setSelection] = React.useState<monaco.ISelection | null>(null);
+    const [lineDecorations, setLineDecorations] = React.useState<string[]>([]);
 
     const monacoRef = React.useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
     const editorRef = React.useRef<HTMLDivElement | null>(null);
@@ -51,6 +57,45 @@ export const Editor: React.FC<EditorProps> = (props) => {
     const [totalWidth, totalHeight] = useSize(editorRef);
 
     const fontSizes = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2];
+
+    const handleCursorPositionChange = (e: monaco.editor.ICursorPositionChangedEvent): void => {
+        setSelection(
+            new monaco.Selection(e.position.lineNumber, e.position.column, e.position.lineNumber, e.position.column)
+        );
+    };
+
+    const handleCursorSelectionChange = (e: monaco.editor.ICursorSelectionChangedEvent): void => {
+        setSelection(e.selection);
+    };
+
+    const updateLineDecorations = React.useCallback(
+        (newDecorations: monaco.editor.IModelDeltaDecoration[]) => {
+            if (!monacoRef.current) {
+                return;
+            }
+            setLineDecorations(monacoRef.current.deltaDecorations(lineDecorations, newDecorations));
+        },
+        [lineDecorations]
+    );
+
+    React.useEffect(() => {
+        if (monacoRef.current && selection) {
+            updateLineDecorations([
+                {
+                    range: new monaco.Range(
+                        selection.selectionStartLineNumber,
+                        selection.selectionStartColumn,
+                        selection.positionLineNumber,
+                        selection.positionColumn
+                    ),
+                    options: {
+                        isWholeLine: true,
+                        linesDecorationsClassName: "Editor__CurrentObjectDecoration",
+                    },
+                },
+            ]);
+        }
+    }, [selection, updateLineDecorations]);
 
     const handleFileChange = (uuid: string) => {
         const file = store.state.files.find((el) => el.uuid === store.state.activeFileUuid);
@@ -64,10 +109,13 @@ export const Editor: React.FC<EditorProps> = (props) => {
 
     const handleEditorValueChange = (value: string) => {
         store.dispatch({ type: StoreActions.UpdateCurrentContent, payload: { content: value } });
+        yamlParser.parse(value);
     };
 
     const handleEditorDidMount: EditorDidMount = (editor) => {
         monacoRef.current = editor;
+        monacoRef.current.onDidChangeCursorPosition(handleCursorPositionChange);
+        monacoRef.current.onDidChangeCursorSelection(handleCursorSelectionChange);
     };
 
     React.useEffect(() => {

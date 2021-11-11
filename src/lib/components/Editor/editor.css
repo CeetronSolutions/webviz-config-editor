@@ -28,3 +28,9 @@
     color: #eee;
     margin: auto;
 }
+
+.Editor__CurrentObjectDecoration {
+    background: rgb(255, 208, 54);
+    width: 5px !important;
+    margin-left: 4px;
+}
