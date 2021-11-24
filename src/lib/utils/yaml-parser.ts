@@ -12,6 +12,8 @@ export enum YamlObjectType {
 export type YamlObject = {
     type: YamlObjectType;
     id: string;
+    key: string;
+    value: any;
     startLineNumber: number;
     endLineNumber: number;
     children: YamlObject[];
@@ -54,6 +56,7 @@ export class YamlParser {
         const tokens = new yaml.Parser().parse(value);
         this.objects = [];
         for (const token of tokens) {
+            console.log(token);
             if (token.type === "document") {
                 if (token.value && token.value.type === "block-map") {
                     token.value.items.forEach((item) => {
@@ -62,6 +65,8 @@ export class YamlParser {
                                 this.objects.push({
                                     type: YamlObjectType.Title,
                                     id: uuid(),
+                                    key: item.key.source,
+                                    value: item.value,
                                     startLineNumber: this.getLineNumber(value, item.key.offset),
                                     endLineNumber: this.getLineNumber(value, item.key.offset),
                                     children: [],
@@ -88,7 +93,7 @@ export class YamlParser {
             section: YamlObjectType.Section,
             group: YamlObjectType.Group,
         };
-        object.items.forEach((item, index) => {
+        object.items.forEach((item) => {
             if (item.value) {
                 const startLineNumber = this.getLineNumber(value, item.start[1].offset);
                 const endLineNumber = this.getEndLineNumber(value, item.value);
@@ -105,6 +110,8 @@ export class YamlParser {
                     objects.push({
                         type: type,
                         id: uuid(),
+                        key: currentItem.items[0].key.source,
+                        value: currentItem.items[0].value,
                         startLineNumber: startLineNumber,
                         endLineNumber: endLineNumber,
                         children:
