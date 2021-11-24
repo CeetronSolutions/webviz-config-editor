@@ -15,6 +15,7 @@ import { useStore } from "../Store";
 import "./live-preview.css";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { PluginVisualizer } from "../PluginVisualizer";
+import { YamlObjectType } from "../../utils/yaml-parser";
 
 type LivePreviewProps = {};
 
@@ -81,6 +82,7 @@ type MenuReturnProps = {
 export const LivePreview: React.FC<LivePreviewProps> = (props) => {
     const [yamlValue, setYamlValue] = React.useState<Yaml>({});
     const [navigationItems, setNavigationItems] = React.useState<PropertyNavigationType>([]);
+    const [title, setTitle] = React.useState<string>("");
     const [pages, setPages] = React.useState<{ [key: string]: any }>({});
     const [currentPage, setCurrentPage] = React.useState<MenuReturnProps>({
         url: "",
@@ -88,30 +90,19 @@ export const LivePreview: React.FC<LivePreviewProps> = (props) => {
     const store = useStore();
 
     React.useEffect(() => {
-        try {
-            const obj = jsYaml.load(store.state.currentEditorContent);
-            if (obj === null || obj === undefined || typeof obj !== "object") {
-                setYamlValue({});
-                setNavigationItems([]);
-                setPages([]);
-                return;
-            }
-            setYamlValue(obj as Yaml);
-            if (obj && "layout" in obj) {
-                const [items, pages] = parseMenu((obj as Yaml)["layout"] as object[]);
-                setNavigationItems(items);
-                setPages(pages);
-            }
-        } catch (e) {
-            setYamlValue({});
+        if (store.state.currentYamlObjects.length === 0) {
             setNavigationItems([]);
             setPages([]);
+            setTitle("");
+            return;
         }
-    }, [store.state.currentEditorContent]);
+        const title = store.state.currentYamlObjects.find((el) => el.type === YamlObjectType.Title);
+        setTitle(title?.id || "");
+    }, [store.state.currentYamlObjects]);
 
     return (
         <div className="LivePreview">
-            <div className="LivePreview__Title">{yamlValue["title"] || <i>No title defined yet</i>}</div>
+            <div className="LivePreview__Title">{title || <i>No title defined yet</i>}</div>
             <div className="LivePreview__Content">
                 <div className="LivePreview__Menu">
                     <MenuWrapper

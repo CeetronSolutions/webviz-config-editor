@@ -27,8 +27,32 @@ export class YamlParser {
         return value.substr(0, offset).split("\n").length;
     }
 
+    getTotalNumLines(value: string): number {
+        return value.split("\n").length;
+    }
+
+    getEndLineNumber(value: string, item: yaml.CST.Token): number {
+        let object: yaml.CST.Token = item;
+        while (true) {
+            if (object.type !== "block-seq" && object.type !== "block-map") {
+                break;
+            }
+            if (object.items.length > 0) {
+                if (object.items[object.items.length - 1].value) {
+                    object = object.items[object.items.length - 1].value as yaml.CST.Token;
+                } else {
+                    object = object.items[object.items.length - 1].start[0];
+                }
+                continue;
+            }
+            break;
+        }
+        return this.getLineNumber(value, object.offset);
+    }
+
     parse(value: string): void {
         const tokens = new yaml.Parser().parse(value);
+        this.objects = [];
         for (const token of tokens) {
             if (token.type === "document") {
                 if (token.value && token.value.type === "block-map") {
@@ -55,78 +79,39 @@ export class YamlParser {
                 }
             }
         }
-        console.log(this.objects);
     }
 
     private parseLayoutObject(value: string, object: yaml.CST.BlockSequence): YamlObject[] {
         const objects: YamlObject[] = [];
-        object.items.forEach((item) => {
+        const typesMap: { [key: string]: YamlObjectType } = {
+            page: YamlObjectType.Page,
+            section: YamlObjectType.Section,
+            group: YamlObjectType.Group,
+        };
+        object.items.forEach((item, index) => {
             if (item.value) {
                 const startLineNumber = this.getLineNumber(value, item.start[1].offset);
-                const endLineNumber = startLineNumber;
+                const endLineNumber = this.getEndLineNumber(value, item.value);
                 const currentItem = item.value;
                 if (
                     currentItem.type === "block-map" &&
                     currentItem.items[0].key &&
                     currentItem.items[0].key.type === "scalar"
                 ) {
-                    if (currentItem.items[0].key.source === "page") {
-                        const children = currentItem.items.find(
-                            (el) => el.key && el.key.type === "scalar" && el.key.source === "content"
-                        );
-                        objects.push({
-                            type: YamlObjectType.Page,
-                            id: uuid(),
-                            startLineNumber: startLineNumber,
-                            endLineNumber: endLineNumber,
-                            children:
-                                children && children.value?.type === "block-seq"
-                                    ? this.parseLayoutObject(value, children.value)
-                                    : [],
-                        });
-                    } else if (currentItem.items[0].key.source === "section") {
-                        const children = currentItem.items.find(
-                            (el) => el.key && el.key.type === "scalar" && el.key.source === "content"
-                        );
-                        objects.push({
-                            type: YamlObjectType.Section,
-                            id: uuid(),
-                            startLineNumber: startLineNumber,
-                            endLineNumber: endLineNumber,
-                            children:
-                                children && children.value?.type === "block-seq"
-                                    ? this.parseLayoutObject(value, children.value)
-                                    : [],
-                        });
-                    } else if (currentItem.items[0].key.source === "group") {
-                        const children = currentItem.items.find(
-                            (el) => el.key && el.key.type === "scalar" && el.key.source === "content"
-                        );
-                        objects.push({
-                            type: YamlObjectType.Page,
-                            id: uuid(),
-                            startLineNumber: startLineNumber,
-                            endLineNumber: endLineNumber,
-                            children:
-                                children && children.value?.type === "block-seq"
-                                    ? this.parseLayoutObject(value, children.value)
-                                    : [],
-                        });
-                    } else {
-                        const children = currentItem.items.find(
-                            (el) => el.key && el.key.type === "scalar" && el.key.source === "content"
-                        );
-                        objects.push({
-                            type: YamlObjectType.Plugin,
-                            id: uuid(),
-                            startLineNumber: startLineNumber,
-                            endLineNumber: endLineNumber,
-                            children:
-                                children && children.value?.type === "block-seq"
-                                    ? this.parseLayoutObject(value, children.value)
-                                    : [],
-                        });
-                    }
+                    const children = currentItem.items.find(
+                        (el) => el.key && el.key.type === "scalar" && el.key.source === "content"
+                    );
+                    const type = typesMap[currentItem.items[0].key.source] || YamlObjectType.Plugin;
+                    objects.push({
+                        type: type,
+                        id: uuid(),
+                        startLineNumber: startLineNumber,
+                        endLineNumber: endLineNumber,
+                        children:
+                            children && children.value?.type === "block-seq"
+                                ? this.parseLayoutObject(value, children.value)
+                                : [],
+                    });
                 }
             }
         });
@@ -135,5 +120,35 @@ export class YamlParser {
 
     getObjects(): YamlObject[] {
         return this.objects;
+    }
+
+    static findClosestChild(
+        yamlObjects: YamlObject[],
+        startLineNumber: number,
+        endLineNumber: number
+    ): YamlObject | undefined {
+        let objects = yamlObjects;
+        let lastMatchingObject: YamlObject | undefined;
+        let breakLoop = false;
+        while (true) {
+            let numMatches = 0;
+            for (let i = 0; i < objects.length; i++) {
+                const object = objects[i];
+                if (object.startLineNumber <= startLineNumber && object.endLineNumber >= endLineNumber) {
+                    numMatches++;
+                    lastMatchingObject = object;
+                    if (object.children.length === 0) {
+                        breakLoop = true;
+                    } else {
+                        objects = object.children;
+                    }
+                    break;
+                }
+            }
+            if (breakLoop || !lastMatchingObject || numMatches === 0) {
+                break;
+            }
+        }
+        return lastMatchingObject;
     }
 }

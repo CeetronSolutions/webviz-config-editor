@@ -19,7 +19,6 @@ import YamlWorker from "worker-loader!monaco-yaml/lib/esm/yaml.worker";
 import { FileTabs } from "../FileTabs";
 import { FolderOpen, InsertDriveFile } from "@mui/icons-material";
 import { Button } from "@mui/material";
-import { YamlParser } from "../../utils/yaml-parser";
 
 declare global {
     interface Window {
@@ -42,8 +41,6 @@ window.MonacoEnvironment = {
 
 type EditorProps = {};
 
-const yamlParser = new YamlParser();
-
 export const Editor: React.FC<EditorProps> = (props) => {
     const [fontSize, setFontSize] = React.useState<number>(1);
     const [noModels, setNoModels] = React.useState<boolean>(false);
@@ -59,13 +56,46 @@ export const Editor: React.FC<EditorProps> = (props) => {
     const fontSizes = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2];
 
     const handleCursorPositionChange = (e: monaco.editor.ICursorPositionChangedEvent): void => {
-        setSelection(
-            new monaco.Selection(e.position.lineNumber, e.position.column, e.position.lineNumber, e.position.column)
-        );
+        if (
+            selection === null ||
+            selection.selectionStartLineNumber !== e.position.lineNumber ||
+            selection.positionLineNumber !== e.position.lineNumber ||
+            selection.selectionStartColumn !== e.position.column ||
+            selection.positionColumn !== e.position.column
+        ) {
+            setSelection(
+                new monaco.Selection(e.position.lineNumber, e.position.column, e.position.lineNumber, e.position.column)
+            );
+            store.dispatch({
+                type: StoreActions.UpdateSelection,
+                payload: {
+                    selection: new monaco.Selection(
+                        e.position.lineNumber,
+                        e.position.column,
+                        e.position.lineNumber,
+                        e.position.column
+                    ),
+                },
+            });
+        }
     };
 
     const handleCursorSelectionChange = (e: monaco.editor.ICursorSelectionChangedEvent): void => {
-        setSelection(e.selection);
+        if (
+            selection === null ||
+            selection.selectionStartLineNumber !== e.selection.selectionStartLineNumber ||
+            selection.positionLineNumber !== e.selection.positionLineNumber ||
+            selection.selectionStartColumn !== e.selection.selectionStartColumn ||
+            selection.positionColumn !== e.selection.positionColumn
+        ) {
+            setSelection(e.selection);
+            store.dispatch({
+                type: StoreActions.UpdateSelection,
+                payload: {
+                    selection: e.selection,
+                },
+            });
+        }
     };
 
     const updateLineDecorations = React.useCallback(
@@ -79,14 +109,14 @@ export const Editor: React.FC<EditorProps> = (props) => {
     );
 
     React.useEffect(() => {
-        if (monacoRef.current && selection) {
+        if (monacoRef.current && selection && store.state.selectedYamlObject) {
             updateLineDecorations([
                 {
                     range: new monaco.Range(
-                        selection.selectionStartLineNumber,
-                        selection.selectionStartColumn,
-                        selection.positionLineNumber,
-                        selection.positionColumn
+                        store.state.selectedYamlObject.startLineNumber,
+                        0,
+                        store.state.selectedYamlObject.endLineNumber,
+                        0
                     ),
                     options: {
                         isWholeLine: true,
@@ -95,7 +125,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                 },
             ]);
         }
-    }, [selection, updateLineDecorations]);
+    }, [store.state.selectedYamlObject]);
 
     const handleFileChange = (uuid: string) => {
         const file = store.state.files.find((el) => el.uuid === store.state.activeFileUuid);
@@ -109,7 +139,6 @@ export const Editor: React.FC<EditorProps> = (props) => {
 
     const handleEditorValueChange = (value: string) => {
         store.dispatch({ type: StoreActions.UpdateCurrentContent, payload: { content: value } });
-        yamlParser.parse(value);
     };
 
     const handleEditorDidMount: EditorDidMount = (editor) => {

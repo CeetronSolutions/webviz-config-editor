@@ -12,6 +12,7 @@ import { uuid } from "uuidv4";
 
 import { File } from "../../types/file";
 import { LogEntry, LogEntryType } from "../../types/log";
+import { YamlParser, YamlObject } from "../../utils/yaml-parser";
 
 type ActionMap<
     M extends {
@@ -52,6 +53,8 @@ export type StoreState = {
     settings: Setting[];
     log: LogEntry[];
     currentEditorContent: string;
+    currentYamlObjects: YamlObject[];
+    selectedYamlObject: YamlObject | undefined;
 };
 
 type Payload = {
@@ -109,6 +112,8 @@ const initialState: StoreState = {
     settings: compressSettings(Settings),
     log: [],
     currentEditorContent: "",
+    currentYamlObjects: [],
+    selectedYamlObject: undefined,
 };
 
 export const StoreReducerInit = (initialState: StoreState): StoreState => {
@@ -118,8 +123,12 @@ export const StoreReducerInit = (initialState: StoreState): StoreState => {
         settings: initialState.settings,
         log: initialState.log,
         currentEditorContent: initialState.currentEditorContent,
+        currentYamlObjects: initialState.currentYamlObjects,
+        selectedYamlObject: initialState.selectedYamlObject,
     };
 };
+
+const yamlParser = new YamlParser();
 
 export const StoreReducer = (state: StoreState, action: Actions): StoreState => {
     switch (action.type) {
@@ -145,20 +154,27 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
             if (currentlyActiveFile) {
                 currentlyActiveFile.editorViewState = action.payload.viewState;
             }
+            const newEditorContent =
+                state.files.find((file) => file.uuid === action.payload.uuid)?.editorModel.getValue() || "";
+            yamlParser.parse(newEditorContent);
             return {
                 ...state,
-                currentEditorContent:
-                    state.files.find((file) => file.uuid === action.payload.uuid)?.editorModel.getValue() || "",
+                currentEditorContent: newEditorContent,
+                currentYamlObjects: yamlParser.getObjects(),
+                selectedYamlObject: undefined,
                 activeFileUuid: action.payload.uuid,
             };
         case StoreActions.OpenFile:
             try {
                 const fileContent = fs.readFileSync(action.payload.filePath).toString();
                 const fileUuid = uuid();
+                yamlParser.parse(fileContent);
                 return {
                     ...state,
                     activeFileUuid: fileUuid,
                     currentEditorContent: fileContent,
+                    currentYamlObjects: yamlParser.getObjects(),
+                    selectedYamlObject: undefined,
                     files: [
                         ...state.files,
                         {
@@ -204,6 +220,8 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
                 ],
                 activeFileUuid: newUuid,
                 currentEditorContent: "",
+                currentYamlObjects: [],
+                selectedYamlObject: undefined,
             };
         case StoreActions.CloseFile:
             const fileToDelete = state.files.find((file) => file.uuid === action.payload.uuid);
@@ -216,12 +234,15 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
                           Math.max(0, (state.files.findIndex((file) => file.uuid === action.payload.uuid) || 0) - 1)
                       ].uuid
                     : state.activeFileUuid;
+            const newCurrentEditorContent =
+                state.files.find((file) => file.uuid === newActiveFileUUid)?.editorModel.getValue() || "";
             return {
                 ...state,
                 files: state.files.filter((file) => file.uuid !== action.payload.uuid),
                 activeFileUuid: newActiveFileUUid,
-                currentEditorContent:
-                    state.files.find((file) => file.uuid === newActiveFileUUid)?.editorModel.getValue() || "",
+                currentEditorContent: newCurrentEditorContent,
+                currentYamlObjects: yamlParser.getObjects(),
+                selectedYamlObject: undefined,
             };
         case StoreActions.DeleteFile:
             try {
@@ -242,13 +263,16 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
                                       )
                                   ].uuid
                                 : state.activeFileUuid;
+                        const newCurrentEditorContent =
+                            state.files.find((file) => file.uuid === newActiveFileUUid)?.editorModel.getValue() || "";
+                        yamlParser.parse(newCurrentEditorContent);
                         return {
                             ...state,
                             files: state.files.filter((file) => file.uuid !== action.payload.uuid),
                             activeFileUuid: newActiveFileUUid,
-                            currentEditorContent:
-                                state.files.find((file) => file.uuid === newActiveFileUUid)?.editorModel.getValue() ||
-                                "",
+                            currentEditorContent: newCurrentEditorContent,
+                            currentYamlObjects: yamlParser.getObjects(),
+                            selectedYamlObject: undefined,
                         };
                     }
                 }
@@ -313,9 +337,11 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
                 };
             }
         case StoreActions.UpdateCurrentContent:
+            yamlParser.parse(action.payload.content);
             return {
                 ...state,
                 currentEditorContent: action.payload.content,
+                currentYamlObjects: yamlParser.getObjects(),
             };
 
         case StoreActions.UpdateSelection:
@@ -326,6 +352,17 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
                     ...state,
                     files: state.files.map((el) =>
                         el.uuid === state.activeFileUuid ? { ...el, unsavedChanges: true } : el
+                    ),
+                    selectedYamlObject: YamlParser.findClosestChild(
+                        yamlParser.getObjects(),
+                        Math.min(
+                            action.payload.selection.selectionStartLineNumber,
+                            action.payload.selection.positionLineNumber
+                        ),
+                        Math.max(
+                            action.payload.selection.selectionStartLineNumber,
+                            action.payload.selection.positionLineNumber
+                        )
                     ),
                 };
             }
