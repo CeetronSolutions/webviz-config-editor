@@ -21,8 +21,10 @@ export type YamlObject = {
 
 export class YamlParser {
     private objects: YamlObject[];
+    private parsedString: string;
     constructor() {
         this.objects = [];
+        this.parsedString = "";
     }
 
     getLineNumber(value: string, offset: number): number {
@@ -36,14 +38,16 @@ export class YamlParser {
     getEndLineNumber(value: string, item: yaml.CST.Token): number {
         let object: yaml.CST.Token = item;
         while (true) {
-            if (object.type !== "block-seq" && object.type !== "block-map") {
+            if (object === undefined || (object.type !== "block-seq" && object.type !== "block-map")) {
                 break;
             }
             if (object.items.length > 0) {
                 if (object.items[object.items.length - 1].value) {
                     object = object.items[object.items.length - 1].value as yaml.CST.Token;
-                } else {
+                } else if (object.items[object.items.length - 1].start[0]) {
                     object = object.items[object.items.length - 1].start[0];
+                } else {
+                    break;
                 }
                 continue;
             }
@@ -53,6 +57,7 @@ export class YamlParser {
     }
 
     parse(value: string): void {
+        this.parsedString = value;
         const tokens = new yaml.Parser().parse(value);
         this.objects = [];
         for (const token of tokens) {
@@ -62,11 +67,17 @@ export class YamlParser {
                     token.value.items.forEach((item) => {
                         if (item.key) {
                             if (item.key.type === "scalar" && item.key.source === "title") {
+                                const titleItem = item as {
+                                    start: yaml.CST.SourceToken[];
+                                    key: yaml.CST.Token | null;
+                                    sep: yaml.CST.SourceToken[];
+                                    value?: yaml.CST.Token | undefined;
+                                };
                                 this.objects.push({
                                     type: YamlObjectType.Title,
                                     id: uuid(),
                                     key: item.key.source,
-                                    value: item.value,
+                                    value: (item.value as yaml.CST.FlowScalar | undefined)?.source || "",
                                     startLineNumber: this.getLineNumber(value, item.key.offset),
                                     endLineNumber: this.getLineNumber(value, item.key.offset),
                                     children: [],
@@ -77,7 +88,7 @@ export class YamlParser {
                                 item.value &&
                                 item.value.type === "block-seq"
                             ) {
-                                this.objects.push(...this.parseLayoutObject(value, item.value));
+                                this.objects.push(...this.parseLayout(value, item.value));
                             }
                         }
                     });
@@ -86,7 +97,15 @@ export class YamlParser {
         }
     }
 
-    private parseLayoutObject(value: string, object: yaml.CST.BlockSequence): YamlObject[] {
+    private parseDocument(document: yaml.CST.Document) {}
+
+    private parseSection(section: yaml.CST.BlockMap) {}
+
+    private parsePage(page: yaml.CST.BlockMap) {}
+
+    private parseGroup(group: yaml.CST.BlockMap) {}
+
+    private parseLayout(value: string, object: yaml.CST.BlockSequence): YamlObject[] {
         const objects: YamlObject[] = [];
         const typesMap: { [key: string]: YamlObjectType } = {
             page: YamlObjectType.Page,
@@ -96,7 +115,8 @@ export class YamlParser {
         object.items.forEach((item) => {
             if (item.value) {
                 const startLineNumber = this.getLineNumber(value, item.start[1].offset);
-                const endLineNumber = this.getEndLineNumber(value, item.value);
+                const endLineNumber = item.value ? this.getEndLineNumber(value, item.value) : startLineNumber;
+
                 const currentItem = item.value;
                 if (
                     currentItem.type === "block-map" &&

@@ -97,7 +97,7 @@ export const LivePreview: React.FC<LivePreviewProps> = (props) => {
             return;
         }
         const title = store.state.currentYamlObjects.find((el) => el.type === YamlObjectType.Title);
-        setTitle(title?.id || "");
+        setTitle(title?.value || "");
     }, [store.state.currentYamlObjects]);
 
     return (
