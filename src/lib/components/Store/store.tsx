@@ -12,7 +12,7 @@ import { uuid } from "uuidv4";
 
 import { File } from "../../types/file";
 import { LogEntry, LogEntryType } from "../../types/log";
-import { YamlParser, YamlObject } from "../../utils/yaml-parser";
+import { YamlParser, YamlObject, YamlMetaObject } from "../../utils/yaml-parser";
 
 type ActionMap<
     M extends {
@@ -54,7 +54,8 @@ export type StoreState = {
     log: LogEntry[];
     currentEditorContent: string;
     currentYamlObjects: YamlObject[];
-    selectedYamlObject: YamlObject | undefined;
+    selectedYamlObject: YamlMetaObject | undefined;
+    yamlParser: YamlParser;
 };
 
 type Payload = {
@@ -114,6 +115,7 @@ const initialState: StoreState = {
     currentEditorContent: "",
     currentYamlObjects: [],
     selectedYamlObject: undefined,
+    yamlParser: new YamlParser(),
 };
 
 export const StoreReducerInit = (initialState: StoreState): StoreState => {
@@ -125,10 +127,9 @@ export const StoreReducerInit = (initialState: StoreState): StoreState => {
         currentEditorContent: initialState.currentEditorContent,
         currentYamlObjects: initialState.currentYamlObjects,
         selectedYamlObject: initialState.selectedYamlObject,
+        yamlParser: initialState.yamlParser,
     };
 };
-
-const yamlParser = new YamlParser();
 
 export const StoreReducer = (state: StoreState, action: Actions): StoreState => {
     switch (action.type) {
@@ -156,42 +157,44 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
             }
             const newEditorContent =
                 state.files.find((file) => file.uuid === action.payload.uuid)?.editorModel.getValue() || "";
-            yamlParser.parse(newEditorContent);
+            state.yamlParser.parse(newEditorContent);
             return {
                 ...state,
                 currentEditorContent: newEditorContent,
-                currentYamlObjects: yamlParser.getObjects(),
+                currentYamlObjects: state.yamlParser.getObjects(),
                 selectedYamlObject: undefined,
                 activeFileUuid: action.payload.uuid,
             };
         case StoreActions.OpenFile:
-            try {
-                const fileContent = fs.readFileSync(action.payload.filePath).toString();
-                const fileUuid = uuid();
-                yamlParser.parse(fileContent);
-                return {
-                    ...state,
-                    activeFileUuid: fileUuid,
-                    currentEditorContent: fileContent,
-                    currentYamlObjects: yamlParser.getObjects(),
-                    selectedYamlObject: undefined,
-                    files: [
-                        ...state.files,
-                        {
-                            uuid: fileUuid,
-                            unsavedChanges: true,
-                            editorModel: editor.createModel(fileContent, "yaml", Uri.parse(action.payload.filePath)),
-                            editorViewState: null,
-                            selection: Selection.createWithDirection(0, 0, 0, 0, SelectionDirection.LTR),
-                        },
-                    ],
-                };
+            //try {
+            const fileContent = fs.readFileSync(action.payload.filePath).toString();
+            const fileUuid = uuid();
+            state.yamlParser.parse(fileContent);
+            return {
+                ...state,
+                activeFileUuid: fileUuid,
+                currentEditorContent: fileContent,
+                currentYamlObjects: state.yamlParser.getObjects(),
+                selectedYamlObject: undefined,
+                files: [
+                    ...state.files,
+                    {
+                        uuid: fileUuid,
+                        unsavedChanges: true,
+                        editorModel: editor.createModel(fileContent, "yaml", Uri.parse(action.payload.filePath)),
+                        editorViewState: null,
+                        selection: Selection.createWithDirection(0, 0, 0, 0, SelectionDirection.LTR),
+                    },
+                ],
+            };
+        /*
             } catch (e) {
                 return {
                     ...state,
                     log: [...state.log, { datetimeMs: Date.now(), type: LogEntryType.ERROR, message: e as string }],
                 };
             }
+            */
         case StoreActions.AddNewFile:
             const newUuid = uuid();
             return {
@@ -241,7 +244,7 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
                 files: state.files.filter((file) => file.uuid !== action.payload.uuid),
                 activeFileUuid: newActiveFileUUid,
                 currentEditorContent: newCurrentEditorContent,
-                currentYamlObjects: yamlParser.getObjects(),
+                currentYamlObjects: state.yamlParser.getObjects(),
                 selectedYamlObject: undefined,
             };
         case StoreActions.DeleteFile:
@@ -265,13 +268,13 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
                                 : state.activeFileUuid;
                         const newCurrentEditorContent =
                             state.files.find((file) => file.uuid === newActiveFileUUid)?.editorModel.getValue() || "";
-                        yamlParser.parse(newCurrentEditorContent);
+                        state.yamlParser.parse(newCurrentEditorContent);
                         return {
                             ...state,
                             files: state.files.filter((file) => file.uuid !== action.payload.uuid),
                             activeFileUuid: newActiveFileUUid,
                             currentEditorContent: newCurrentEditorContent,
-                            currentYamlObjects: yamlParser.getObjects(),
+                            currentYamlObjects: state.yamlParser.getObjects(),
                             selectedYamlObject: undefined,
                         };
                     }
@@ -337,11 +340,11 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
                 };
             }
         case StoreActions.UpdateCurrentContent:
-            yamlParser.parse(action.payload.content);
+            state.yamlParser.parse(action.payload.content);
             return {
                 ...state,
                 currentEditorContent: action.payload.content,
-                currentYamlObjects: yamlParser.getObjects(),
+                currentYamlObjects: state.yamlParser.getObjects(),
             };
 
         case StoreActions.UpdateSelection:
@@ -353,8 +356,7 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
                     files: state.files.map((el) =>
                         el.uuid === state.activeFileUuid ? { ...el, unsavedChanges: true } : el
                     ),
-                    selectedYamlObject: YamlParser.findClosestChild(
-                        yamlParser.getObjects(),
+                    selectedYamlObject: state.yamlParser.findClosestObject(
                         Math.min(
                             action.payload.selection.selectionStartLineNumber,
                             action.payload.selection.positionLineNumber
