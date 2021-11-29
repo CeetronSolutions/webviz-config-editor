@@ -3,6 +3,7 @@ import * as path from "path";
 import * as isDev from "electron-is-dev";
 import installExtension, { REACT_DEVELOPER_TOOLS } from "electron-devtools-installer";
 import { initialize, enable } from "@electron/remote/main";
+import * as fs from "fs";
 
 let win: BrowserWindow | null = null;
 
@@ -24,6 +25,9 @@ function openFile() {
         .then(function (fileObj) {
             if (!fileObj.canceled && win) {
                 win.webContents.send("FILE_OPEN", fileObj.filePaths);
+                for (const filePath of fileObj.filePaths) {
+                    addRecentDocument(filePath);
+                }
             }
         })
         .catch(function (err) {
@@ -31,11 +35,59 @@ function openFile() {
         });
 }
 
+function getUserDataDir(): string {
+    return app.getPath("userData");
+}
+
+function addRecentDocument(filePath: string) {
+    const files = getRecentDocuments();
+    if (files.includes(filePath)) {
+        return;
+    }
+    if (files.length >= 5) {
+        files.shift();
+    }
+    files.unshift(filePath);
+    const recentDocumentsFile = path.join(getUserDataDir(), ".recent-documents");
+    fs.appendFileSync(recentDocumentsFile, filePath + "\n");
+    createMenu();
+    if (win) {
+        win.webContents.send("UPDATE_RECENT_DOCUMENTS", files);
+    }
+}
+
+function sendRecentDocuments() {
+    if (win) {
+        win.webContents.send("UPDATE_RECENT_DOCUMENTS", getRecentDocuments());
+    }
+}
+
+function getRecentDocuments(): string[] {
+    const recentDocumentsFile = path.join(getUserDataDir(), ".recent-documents");
+    if (!fs.existsSync(recentDocumentsFile)) {
+        return [];
+    }
+    const content = fs.readFileSync(recentDocumentsFile);
+    return content
+        .toString()
+        .split("\n")
+        .filter((el) => fs.existsSync(el));
+}
+
+function clearRecentDocuments() {
+    const recentDocumentsFile = path.join(getUserDataDir(), ".recent-documents");
+    fs.writeFileSync(recentDocumentsFile, "");
+    createMenu();
+    if (win) {
+        win.webContents.send("UPDATE_RECENT_DOCUMENTS", []);
+    }
+}
+
 function createWindow() {
     const iconPath = path.join(__dirname, "..", "..", "public", "wce-icon.png");
 
     win = new BrowserWindow({
-        title: "Webviz Config Editor",
+        title: appTitle,
         icon: iconPath,
         width: 1280,
         height: 800,
@@ -80,7 +132,29 @@ function createWindow() {
     }
     */
 
+    createMenu();
+
+    ipcMain.on("FILE_OPEN", () => openFile());
+    ipcMain.on("GET_RECENT_DOCUMENTS", () => sendRecentDocuments());
+}
+
+function createMenu() {
+    if (win === null) return;
     const isMac = process.platform === "darwin";
+
+    const listOfRecentDocuments = getRecentDocuments();
+    const recentDocuments = listOfRecentDocuments.map((doc) => ({
+        label: path.basename(doc),
+        click() {
+            (win as BrowserWindow).webContents.send("FILE_OPEN", [doc]);
+        },
+    }));
+    recentDocuments.push({
+        label: "Clear Recent",
+        click() {
+            clearRecentDocuments();
+        },
+    });
 
     const template = [
         // { role: 'appMenu' }
@@ -125,6 +199,10 @@ function createWindow() {
                     click() {
                         openFile();
                     },
+                },
+                {
+                    label: "Open Recent",
+                    submenu: recentDocuments,
                 },
                 {
                     label: "Save",
@@ -232,8 +310,6 @@ function createWindow() {
 
     const menu = Menu.buildFromTemplate(template as Array<MenuItemConstructorOptions>);
     Menu.setApplicationMenu(menu);
-
-    ipcMain.on("FILE_OPEN", () => openFile());
 }
 
 app.on("ready", createWindow);

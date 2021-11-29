@@ -5,69 +5,37 @@ import { Uri } from "monaco-editor";
 import ReactMarkdown from "react-markdown";
 
 import { useStore } from "../Store";
+import { LayoutObject, PluginArgumentObject } from "../../utils/yaml-parser";
 
 export type PluginVisualizerType = {
-    pluginData: string | { [key: string]: any };
+    pluginData: LayoutObject;
 };
 
 export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
     const store = useStore();
 
-    const renderPlugin = (data: string | { [key: string]: any }): React.ReactNode => {
+    const renderPlugin = (data: LayoutObject): React.ReactNode => {
         if (typeof data === "string") {
             return data;
-        } else if (typeof data === "object" && Object.keys(data).length > 0) {
-            const file = store.state.files.find((el) => el.uuid === store.state.activeFileUuid);
-            if (file) {
-                if (
-                    Object.keys(data)[0] === "BannerImage" &&
-                    typeof data["BannerImage"] === "object" &&
-                    Object.keys(data["BannerImage"]).includes("image")
-                ) {
-                    return (
-                        <img
-                            src={Uri.parse(
-                                path.join(path.dirname(file.editorModel.uri.toString()), data["BannerImage"]["image"])
-                            ).toString()}
-                            alt=""
-                        />
-                    );
-                }
-                if (
-                    Object.keys(data)[0] === "Markdown" &&
-                    typeof data["Markdown"] === "object" &&
-                    Object.keys(data["Markdown"]).includes("markdown_file")
-                ) {
-                    return (
-                        <ReactMarkdown>
-                            {fs
-                                .readFileSync(
-                                    path.join(
-                                        path.dirname(file.editorModel.uri.toString().replace("file://", "")),
-                                        data["Markdown"]["markdown_file"]
-                                    )
-                                )
-                                .toString()}
-                        </ReactMarkdown>
-                    );
-                }
-            }
         }
-        return Object.keys(data).map((el) => (
+
+        console.log(data.children);
+
+        return (
             <>
-                <h3>{el}</h3>
-                {Object.keys(data[el]).map((prop) => (
-                    <table>
-                        <tr>
-                            <td>
-                                <strong>{prop}: </strong>
-                            </td>
-                            <td>{JSON.stringify(data[el][prop])}</td>
-                        </tr>
-                    </table>
-                ))}
+                <h3>{data.name}</h3>
+                <table>
+                    <tbody>
+                        {(data.children as PluginArgumentObject[]).map((child: PluginArgumentObject) => (
+                            <tr>
+                                <td>{child.name}</td>
+                                <td>{JSON.stringify(child.value)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </>
-        ));
+        );
     };
 
     return <div className="LivePreview__Plugin">{renderPlugin(props.pluginData)}</div>;

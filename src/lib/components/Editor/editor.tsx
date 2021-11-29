@@ -4,9 +4,9 @@ import useSize from "@react-hook/size";
 import { Environment } from "monaco-editor/esm/vs/editor/editor.api";
 import { setDiagnosticsOptions } from "monaco-yaml";
 import { ipcRenderer } from "electron";
-import yaml from "yaml";
+import * as path from "path";
 
-import { useStore, StoreActions } from "../Store/store";
+import { useStore, StoreActions, UpdateSource } from "../Store/store";
 
 import "./editor.css";
 
@@ -18,7 +18,7 @@ import EditorWorker from "worker-loader!monaco-editor/esm/vs/editor/editor.worke
 import YamlWorker from "worker-loader!monaco-yaml/lib/esm/yaml.worker";
 import { FileTabs } from "../FileTabs";
 import { FolderOpen, InsertDriveFile } from "@mui/icons-material";
-import { Button } from "@mui/material";
+import { Button, Tooltip } from "@mui/material";
 
 declare global {
     interface Window {
@@ -75,6 +75,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                         e.position.lineNumber,
                         e.position.column
                     ),
+                    source: UpdateSource.Editor,
                 },
             });
         }
@@ -93,6 +94,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                 type: StoreActions.UpdateSelection,
                 payload: {
                     selection: e.selection,
+                    source: UpdateSource.Editor,
                 },
             });
         }
@@ -124,6 +126,12 @@ export const Editor: React.FC<EditorProps> = (props) => {
                     },
                 },
             ]);
+            if (store.state.updateSource !== UpdateSource.Editor) {
+                monacoRef.current.revealLinesInCenterIfOutsideViewport(
+                    store.state.selectedYamlObject.startLineNumber,
+                    store.state.selectedYamlObject.endLineNumber
+                );
+            }
         }
     }, [store.state.selectedYamlObject]);
 
@@ -191,45 +199,56 @@ export const Editor: React.FC<EditorProps> = (props) => {
     };
 
     return (
-        <div className="Editor" ref={editorRef}>
-            {noModels ? (
-                <div className="Editor__NoModels">
-                    <h2>Webviz Config Editor</h2>
-                    <h3>Start</h3>
-                    <Button onClick={() => handleNewFileClick()}>
-                        <InsertDriveFile /> New File
-                    </Button>
-                    <br />
-                    <Button onClick={() => ipcRenderer.send("FILE_OPEN")}>
-                        <FolderOpen /> Open File
-                    </Button>
-                    <br />
-                    <h3>Recent</h3>
-                    ...
+        <div className="EditorWrapper">
+            <div className="Editor__NoModels" style={{ display: noModels ? "block" : "none", height: totalHeight }}>
+                <h2>Webviz Config Editor</h2>
+                <h3>Start</h3>
+                <Button onClick={() => handleNewFileClick()}>
+                    <InsertDriveFile style={{ marginRight: 8 }} /> New File
+                </Button>
+                <br />
+                <Button onClick={() => ipcRenderer.send("FILE_OPEN")}>
+                    <FolderOpen style={{ marginRight: 8 }} /> Open File
+                </Button>
+                <br />
+                <h3>Recent</h3>
+                <ul>
+                    {store.state.recentDocuments.map((doc) => (
+                        <li>
+                            <Tooltip title={doc} placement="right">
+                                <Button
+                                    onClick={() =>
+                                        store.dispatch({ type: StoreActions.OpenFile, payload: { filePath: doc } })
+                                    }
+                                >
+                                    {path.basename(doc)}
+                                </Button>
+                            </Tooltip>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+            <div className="Editor" ref={editorRef}>
+                <FileTabs onFileChange={handleFileChange} />
+                <MonacoEditor
+                    language="yaml"
+                    defaultValue=""
+                    className="YamlEditor"
+                    editorDidMount={handleEditorDidMount}
+                    editorWillMount={handleEditorWillMount}
+                    onChange={handleEditorValueChange}
+                    theme="vs-dark"
+                    options={{ tabSize: 2, insertSpaces: true, quickSuggestions: { other: true, strings: true } }}
+                    width={totalWidth}
+                />
+                <div className="EditorSettings">
+                    <select value={fontSize} onChange={(event) => setFontSize(parseFloat(event.target.value))}>
+                        {fontSizes.map((size) => (
+                            <option value={size} key={size}>{`${Math.floor(size * 100)} %`}</option>
+                        ))}
+                    </select>
                 </div>
-            ) : (
-                <>
-                    <FileTabs onFileChange={handleFileChange} />
-                    <MonacoEditor
-                        language="yaml"
-                        defaultValue=""
-                        className="YamlEditor"
-                        editorDidMount={handleEditorDidMount}
-                        editorWillMount={handleEditorWillMount}
-                        onChange={handleEditorValueChange}
-                        theme="vs-dark"
-                        options={{ tabSize: 2, insertSpaces: true, quickSuggestions: { other: true, strings: true } }}
-                        width={totalWidth}
-                    />
-                    <div className="EditorSettings">
-                        <select value={fontSize} onChange={(event) => setFontSize(parseFloat(event.target.value))}>
-                            {fontSizes.map((size) => (
-                                <option value={size} key={size}>{`${Math.floor(size * 100)} %`}</option>
-                            ))}
-                        </select>
-                    </div>
-                </>
-            )}
+            </div>
         </div>
     );
 };

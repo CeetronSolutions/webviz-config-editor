@@ -34,7 +34,9 @@ export const FileTab: React.FC<FileTabProps> = (props) => {
         props.onSelect(props.uuid);
     };
 
-    const handleCloseEvent = () => {
+    const handleCloseEvent = (e: React.MouseEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
         store.dispatch({ type: StoreActions.CloseFile, payload: { uuid: props.uuid } });
     };
 
@@ -44,7 +46,7 @@ export const FileTab: React.FC<FileTabProps> = (props) => {
             onClick={() => handleClickEvent()}
         >
             {filename}
-            <div className="FileTab__CloseButton" onClick={handleCloseEvent}>
+            <div className="FileTab__CloseButton" onClick={(e) => handleCloseEvent(e)}>
                 <Close fontSize="inherit" />
             </div>
         </div>

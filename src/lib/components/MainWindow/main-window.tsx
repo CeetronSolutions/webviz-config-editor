@@ -41,6 +41,7 @@ export const MainWindow: React.FC<MainWindowProps> = (props) => {
     React.useEffect(() => {
         const file = store.state.files.find((el) => el.uuid === store.state.activeFileUuid);
         if (!file || file.editorModel.uri.toString() === "") {
+            document.title = "Webviz Config Editor";
             return;
         }
         const filePath = file.editorModel.uri.path;

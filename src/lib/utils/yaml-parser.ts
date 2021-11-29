@@ -171,7 +171,6 @@ export class YamlParser {
         this.parsedString = value;
         const tokens = new yaml.Parser().parse(value);
         for (const token of tokens) {
-            console.log(token);
             /*
             At the outermost level, expected tokens are:
             - comment (ignore)
@@ -556,6 +555,47 @@ export class YamlParser {
             }
         }
         return lastMatchingObject;
+    }
+
+    findClosestPage(startLineNumber: number, endLineNumber: number): LayoutObject {
+        let objects: (YamlObject | LayoutObject)[] = this.getObjects();
+        let lastMatchingObject: LayoutObject | YamlObject = objects[0];
+        let breakLoop = false;
+        while (true) {
+            let numMatches = 0;
+            for (let i = 0; i < objects.length; i++) {
+                const object = objects[i];
+                if (object.startLineNumber <= startLineNumber && object.endLineNumber >= endLineNumber) {
+                    numMatches++;
+                    lastMatchingObject = object as LayoutObject;
+                    if (
+                        "value" in object &&
+                        object.value.constructor === Array &&
+                        object.value.length > 0 &&
+                        "id" in object.value[0]
+                    ) {
+                        objects = object.value as YamlObject[] | LayoutObject[];
+                    } else if (
+                        "children" in object &&
+                        object.children.constructor === Array &&
+                        object.children.length > 0 &&
+                        "id" in object.children[0]
+                    ) {
+                        objects = object.children as LayoutObject[];
+                    } else {
+                        breakLoop = true;
+                    }
+                    if (object.type === YamlLayoutObjectType.Page) {
+                        breakLoop = true;
+                    }
+                    break;
+                }
+            }
+            if (breakLoop || !lastMatchingObject || numMatches === 0) {
+                break;
+            }
+        }
+        return lastMatchingObject as LayoutObject;
     }
 
     getObjectById(id: string): LayoutObject | undefined {
