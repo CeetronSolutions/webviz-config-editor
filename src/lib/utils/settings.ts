@@ -21,6 +21,15 @@ export const Settings: { [key: string]: SettingMeta[] } = {
             defaultValue: "",
         },
     ],
+    "Webviz Schema": [
+        {
+            id: "schema",
+            label: "Webviz Schema",
+            description: "Select the Webviz schema file.",
+            type: "file",
+            defaultValue: "",
+        },
+    ],
     Theme: [
         {
             id: "theme",

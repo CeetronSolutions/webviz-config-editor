@@ -188,9 +188,10 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
             const newFiles = [...state.files];
             if (
                 state.files.length === 1 &&
-                state.files[0].editorModel.uri === Uri.parse(path.join(__dirname, "Untitled-1.yaml")) &&
+                state.files[0].editorModel.uri.path === Uri.parse(path.join(__dirname, "Untitled-1.yaml")).path &&
                 state.files[0].unsavedChanges
             ) {
+                state.files[0].editorModel.dispose();
                 newFiles.shift();
             }
             const fileContent = fs.readFileSync(action.payload.filePath).toString();

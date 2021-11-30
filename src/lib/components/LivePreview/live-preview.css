@@ -43,3 +43,7 @@
     margin: 8px;
     display: block;
 }
+
+.LivePreview__Plugin--selected {
+    border-color: rgb(180, 0, 0);
+}

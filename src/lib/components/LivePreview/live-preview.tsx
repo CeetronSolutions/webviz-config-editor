@@ -78,7 +78,7 @@ export const LivePreview: React.FC<LivePreviewProps> = (props) => {
                 </div>
                 <div className="LivePreview__Page">
                     {currentPageContent.map((plugin: LayoutObject) => (
-                        <PluginVisualizer pluginData={plugin} />
+                        <PluginVisualizer key={plugin.id} pluginData={plugin} />
                     ))}
                 </div>
             </div>

@@ -1,9 +1,11 @@
 import React from "react";
 import { Typography, TextField, Grid, CircularProgress } from "@mui/material";
+import * as fs from "fs";
+import { execSync } from "child_process";
+import * as which from "which";
 
 import { SettingMeta } from "../../../utils/settings";
 import { useStore, StoreActions } from "../../Store/store";
-import { makeRequest, RequestMethod } from "../../../utils/api";
 import { Autocomplete } from "@mui/material";
 
 enum PreferenceItemState {
@@ -31,48 +33,101 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
     });
 
     React.useEffect(() => {
+        setLoadingState(PreferenceItemLoadingState.LOADING);
         setLocalValue(store.state.settings.find((el) => el.id === props.id)?.value || "");
-        makeRequest("/get-python-installations", (data, error) => {
-            if (error) {
-                setInstallations([]);
-                setLoadingState(PreferenceItemLoadingState.ERROR);
-            } else if (data["result"] === "success") {
-                setInstallations(data["installations"]);
-                setLoadingState(PreferenceItemLoadingState.LOADED);
-            } else {
+        try {
+            which.default(
+                "python",
+                { all: true },
+                (err: Error | null, resolvedPaths: string | readonly string[] | undefined) => {
+                    if (err) {
+                        which.default(
+                            "python3",
+                            { all: true },
+                            (err: Error | null, resolvedPaths: string | readonly string[] | undefined) => {
+                                if (err) {
+                                    setInstallations([]);
+                                    setLoadingState(PreferenceItemLoadingState.ERROR);
+                                }
+                                if (resolvedPaths === undefined) {
+                                    setInstallations([]);
+                                } else if (resolvedPaths.constructor === Array) {
+                                    setInstallations(resolvedPaths);
+                                } else if (resolvedPaths.constructor === String) {
+                                    setInstallations([resolvedPaths as string]);
+                                }
+                                setLoadingState(PreferenceItemLoadingState.LOADED);
+                            }
+                        );
+                    } else {
+                        if (resolvedPaths === undefined) {
+                            setInstallations([]);
+                        } else if (resolvedPaths.constructor === Array) {
+                            setInstallations(resolvedPaths);
+                        } else if (resolvedPaths.constructor === String) {
+                            setInstallations([resolvedPaths as string]);
+                        }
+                        setLoadingState(PreferenceItemLoadingState.LOADED);
+                    }
+                }
+            );
+        } catch (err) {
+            try {
+                which.default(
+                    "python3",
+                    { all: true },
+                    (err: Error | null, resolvedPaths: string | readonly string[] | undefined) => {
+                        if (err) {
+                            setInstallations([]);
+                            setLoadingState(PreferenceItemLoadingState.ERROR);
+                        }
+                        if (resolvedPaths === undefined) {
+                            setInstallations([]);
+                        } else if (resolvedPaths.constructor === Array) {
+                            setInstallations(resolvedPaths);
+                        } else if (resolvedPaths.constructor === String) {
+                            setInstallations([resolvedPaths as string]);
+                        }
+                        setLoadingState(PreferenceItemLoadingState.LOADED);
+                    }
+                );
+            } catch (err) {
                 setInstallations([]);
                 setLoadingState(PreferenceItemLoadingState.ERROR);
             }
-        });
+        }
     }, [setInstallations, setLoadingState]);
 
     React.useEffect(() => {
         setState({ state: PreferenceItemState.VALID, message: "" });
         if (props.type === "pythonInterpreter") {
             setState({ state: PreferenceItemState.VALIDATING, message: "" });
-            makeRequest(
-                "/check-if-python-interpreter",
-                (data, error) => {
-                    if (error) {
-                        setState({ state: PreferenceItemState.INVALID, message: error });
-                    } else if (data["result"] === "success") {
-                        setState({ state: PreferenceItemState.VALID, message: "" });
-                        store.dispatch({
-                            type: StoreActions.SetSetting,
-                            payload: {
-                                id: props.id,
-                                value: localValue,
-                            },
-                        });
-                    } else {
-                        setState({ state: PreferenceItemState.INVALID, message: data["message"] });
+            try {
+                if (fs.existsSync(localValue as string)) {
+                    try {
+                        fs.accessSync(localValue as string, fs.constants.X_OK);
+                        try {
+                            execSync(`${localValue as string} -c "import sys; print(sys.path)"`);
+                            setState({ state: PreferenceItemState.VALID, message: "" });
+                            store.dispatch({
+                                type: StoreActions.SetSetting,
+                                payload: {
+                                    id: props.id,
+                                    value: localValue,
+                                },
+                            });
+                        } catch (error) {
+                            setState({ state: PreferenceItemState.INVALID, message: "Invalid Python interpreter." });
+                        }
+                    } catch (error) {
+                        setState({ state: PreferenceItemState.INVALID, message: "File is not executable." });
                     }
-                },
-                RequestMethod.POST,
-                {
-                    filePath: localValue,
+                } else {
+                    setState({ state: PreferenceItemState.INVALID, message: "File does not exist." });
                 }
-            );
+            } catch (error) {
+                setState({ state: PreferenceItemState.INVALID, message: "Invalid file path." });
+            }
         } else {
             store.dispatch({
                 type: StoreActions.SetSetting,

@@ -44,10 +44,11 @@ export interface LayoutObject extends YamlMetaObject {
     children: LayoutObject[] | PluginArgumentObject[];
 }
 
-export type PluginArgumentObject = {
+export interface PluginArgumentObject extends YamlMetaObject {
+    id: string;
     name: string;
     value: string | PluginArgumentObject[] | (string | boolean | number)[];
-};
+}
 
 export type OptionsObject = {
     key: string;
@@ -442,21 +443,30 @@ export class YamlParser {
             if (option.key && option.value && option.key.type === "scalar") {
                 if (option.value.type === "scalar") {
                     optionObjects.push({
+                        id: uuid(),
                         name: option.key.source,
                         value: option.value.source,
+                        startLineNumber: this.getLineNumber(option.key.offset),
+                        endLineNumber: this.getEndLineNumber(option.value),
                     });
                 } else if (option.value.type === "block-seq") {
                     const valueList = option.value.items
                         .filter((el: BlockSequenceItem) => el.value && el.value.type === "scalar")
                         .map((el) => (el.value as yaml.CST.FlowScalar).source);
                     optionObjects.push({
+                        id: uuid(),
                         name: option.key.source,
                         value: valueList,
+                        startLineNumber: this.getLineNumber(option.key.offset),
+                        endLineNumber: this.getEndLineNumber(option.value),
                     });
                 } else if (option.value.type === "block-map") {
                     optionObjects.push({
+                        id: uuid(),
                         name: option.key.source,
                         value: this.parsePluginOptions(option.value.items),
+                        startLineNumber: this.getLineNumber(option.key.offset),
+                        endLineNumber: this.getEndLineNumber(option.value),
                     });
                 }
             }

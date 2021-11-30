@@ -81,11 +81,10 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
                 style={{ width: totalWidth, height: totalHeight, display: isDragging ? "block" : "none" }}
             />
             {props.children.map((el: React.ReactNode, index: number) => (
-                <>
+                <React.Fragment key={`resizable-panel-${index}`}>
                     <div
                         className="ResizablePanel"
                         ref={(el) => (resizablePanelRefs.current[index] = el)}
-                        key={`resizable-panel-${index}`}
                         style={{ width: `calc(${sizes[index]}% - 3px)` }}
                     >
                         {el}
@@ -93,11 +92,10 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
                     {index < props.children.length - 1 && (
                         <div
                             className={`ResizeDragBar${isDragging ? " ResizeDragBar--active" : ""}`}
-                            key={`resizable-panel-drag-bar-${index}`}
                             onMouseDown={(e) => startResize(e, index)}
                         ></div>
                     )}
-                </>
+                </React.Fragment>
             ))}
         </div>
     );

@@ -96,6 +96,7 @@
         "webpack": "4.44.2",
         "webpack-dev-server": "3.11.1",
         "webpack-manifest-plugin": "^2.2.0",
+        "which": "^2.0.2",
         "workbox-webpack-plugin": "^5.1.4",
         "worker-loader": "^3.0.8",
         "yaml": "2.0.0-8"
@@ -136,6 +137,7 @@
         ]
     },
     "devDependencies": {
+        "@types/which": "^2.0.1",
         "concurrently": "^6.3.0",
         "cross-env": "^7.0.3",
         "electron": "^15.2.0",

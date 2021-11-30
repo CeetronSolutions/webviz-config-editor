@@ -19,6 +19,7 @@ import YamlWorker from "worker-loader!monaco-yaml/lib/esm/yaml.worker";
 import { FileTabs } from "../FileTabs";
 import { FolderOpen, InsertDriveFile } from "@mui/icons-material";
 import { Button, Tooltip } from "@mui/material";
+import { preprocessJsonSchema } from "../../utils/json-schema-preprocessor";
 
 declare global {
     interface Window {
@@ -133,7 +134,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                 );
             }
         }
-    }, [store.state.selectedYamlObject]);
+    }, [store.state.selectedYamlObject, store.state.updateSource]);
 
     const handleFileChange = (uuid: string) => {
         const file = store.state.files.find((el) => el.uuid === store.state.activeFileUuid);
@@ -179,6 +180,13 @@ export const Editor: React.FC<EditorProps> = (props) => {
     }, [store.state.activeFileUuid, store.state.files]);
 
     const handleEditorWillMount: EditorWillMount = (monaco) => {
+        let jsonSchema = undefined;
+        try {
+            jsonSchema = preprocessJsonSchema("/home/ruben/.local/share/webviz/webviz_schema.json");
+        } catch (e) {
+            console.log("Error");
+        }
+
         setDiagnosticsOptions({
             validate: true,
             enableSchemaRequest: true,
@@ -188,6 +196,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
             schemas: [
                 {
                     fileMatch: ["*"],
+                    schema: jsonSchema,
                     uri: "file:///home/ruben/.local/share/webviz/webviz_schema.json",
                 },
             ],
@@ -214,7 +223,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                 <h3>Recent</h3>
                 <ul>
                     {store.state.recentDocuments.map((doc) => (
-                        <li>
+                        <li key={`recent-document:${doc}`}>
                             <Tooltip title={doc} placement="right">
                                 <Button
                                     onClick={() =>
