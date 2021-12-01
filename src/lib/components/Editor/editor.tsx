@@ -6,7 +6,7 @@ import { setDiagnosticsOptions } from "monaco-yaml";
 import { ipcRenderer } from "electron";
 import * as path from "path";
 
-import { useStore, StoreActions, UpdateSource } from "../Store/store";
+import { FilesStore } from "../Store";
 
 import "./editor.css";
 
@@ -51,7 +51,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
     const monacoRef = React.useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
     const editorRef = React.useRef<HTMLDivElement | null>(null);
 
-    const store = useStore();
+    const store = FilesStore.useStore();
     const [totalWidth, totalHeight] = useSize(editorRef);
 
     const fontSizes = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2];
@@ -68,7 +68,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                 new monaco.Selection(e.position.lineNumber, e.position.column, e.position.lineNumber, e.position.column)
             );
             store.dispatch({
-                type: StoreActions.UpdateSelection,
+                type: FilesStore.StoreActions.UpdateSelection,
                 payload: {
                     selection: new monaco.Selection(
                         e.position.lineNumber,
@@ -76,7 +76,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                         e.position.lineNumber,
                         e.position.column
                     ),
-                    source: UpdateSource.Editor,
+                    source: FilesStore.UpdateSource.Editor,
                 },
             });
         }
@@ -92,10 +92,10 @@ export const Editor: React.FC<EditorProps> = (props) => {
         ) {
             setSelection(e.selection);
             store.dispatch({
-                type: StoreActions.UpdateSelection,
+                type: FilesStore.StoreActions.UpdateSelection,
                 payload: {
                     selection: e.selection,
-                    source: UpdateSource.Editor,
+                    source: FilesStore.UpdateSource.Editor,
                 },
             });
         }
@@ -127,7 +127,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                     },
                 },
             ]);
-            if (store.state.updateSource !== UpdateSource.Editor) {
+            if (store.state.updateSource !== FilesStore.UpdateSource.Editor) {
                 monacoRef.current.revealLinesInCenterIfOutsideViewport(
                     store.state.selectedYamlObject.startLineNumber,
                     store.state.selectedYamlObject.endLineNumber
@@ -140,14 +140,14 @@ export const Editor: React.FC<EditorProps> = (props) => {
         const file = store.state.files.find((el) => el.uuid === store.state.activeFileUuid);
         if (file && monacoRef.current) {
             store.dispatch({
-                type: StoreActions.SetActiveFile,
+                type: FilesStore.StoreActions.SetActiveFile,
                 payload: { uuid: uuid, viewState: monacoRef.current.saveViewState() },
             });
         }
     };
 
     const handleEditorValueChange = (value: string) => {
-        store.dispatch({ type: StoreActions.UpdateCurrentContent, payload: { content: value } });
+        store.dispatch({ type: FilesStore.StoreActions.UpdateCurrentContent, payload: { content: value } });
     };
 
     const handleEditorDidMount: EditorDidMount = (editor) => {
@@ -204,7 +204,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
     };
 
     const handleNewFileClick = () => {
-        store.dispatch({ type: StoreActions.AddNewFile, payload: {} });
+        store.dispatch({ type: FilesStore.StoreActions.AddNewFile, payload: {} });
     };
 
     return (
@@ -227,7 +227,10 @@ export const Editor: React.FC<EditorProps> = (props) => {
                             <Tooltip title={doc} placement="right">
                                 <Button
                                     onClick={() =>
-                                        store.dispatch({ type: StoreActions.OpenFile, payload: { filePath: doc } })
+                                        store.dispatch({
+                                            type: FilesStore.StoreActions.OpenFile,
+                                            payload: { filePath: doc },
+                                        })
                                     }
                                 >
                                     {path.basename(doc)}

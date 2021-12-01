@@ -1,7 +1,7 @@
 import React from "react";
 import { monaco } from "react-monaco-editor";
 
-import { StoreActions, useStore, UpdateSource } from "../Store";
+import { FilesStore } from "../Store";
 import { LayoutObject, PluginArgumentObject } from "../../utils/yaml-parser";
 
 export type PluginVisualizerType = {
@@ -10,7 +10,7 @@ export type PluginVisualizerType = {
 
 export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
     const [selected, setSelected] = React.useState<boolean>(false);
-    const store = useStore();
+    const store = FilesStore.useStore();
 
     React.useEffect(() => {
         if (
@@ -25,10 +25,10 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
 
     const selectPlugin = () => {
         store.dispatch({
-            type: StoreActions.UpdateSelection,
+            type: FilesStore.StoreActions.UpdateSelection,
             payload: {
                 selection: new monaco.Selection(props.pluginData.startLineNumber, 0, props.pluginData.endLineNumber, 0),
-                source: UpdateSource.Preview,
+                source: FilesStore.UpdateSource.Preview,
             },
         });
     };

@@ -1,6 +1,6 @@
 import React from "react";
 
-import { useStore } from "../Store/store";
+import { FilesStore } from "../Store";
 import { File } from "../../types/file";
 import { FileTab } from "./components/file-tab";
 
@@ -11,7 +11,7 @@ export type FileTabsProps = {
 };
 
 export const FileTabs: React.FC<FileTabsProps> = (props) => {
-    const store = useStore();
+    const store = FilesStore.useStore();
     const [files, setFiles] = React.useState<File[]>([]);
 
     React.useEffect(() => {

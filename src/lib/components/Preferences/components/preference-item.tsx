@@ -5,7 +5,7 @@ import { execSync } from "child_process";
 import * as which from "which";
 
 import { SettingMeta } from "../../../utils/settings";
-import { useStore, StoreActions } from "../../Store/store";
+import { SettingsStore } from "../../Store";
 import { Autocomplete } from "@mui/material";
 
 enum PreferenceItemState {
@@ -21,7 +21,7 @@ enum PreferenceItemLoadingState {
 }
 
 export const PreferenceItem: React.FC<SettingMeta> = (props) => {
-    const store = useStore();
+    const store = SettingsStore.useStore();
     const [localValue, setLocalValue] = React.useState<string | number>("");
     const [installations, setInstallations] = React.useState<string[]>([]);
     const [loadingState, setLoadingState] = React.useState<PreferenceItemLoadingState>(
@@ -110,7 +110,7 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                             execSync(`${localValue as string} -c "import sys; print(sys.path)"`);
                             setState({ state: PreferenceItemState.VALID, message: "" });
                             store.dispatch({
-                                type: StoreActions.SetSetting,
+                                type: SettingsStore.StoreActions.SetSetting,
                                 payload: {
                                     id: props.id,
                                     value: localValue,
@@ -130,7 +130,7 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
             }
         } else {
             store.dispatch({
-                type: StoreActions.SetSetting,
+                type: SettingsStore.StoreActions.SetSetting,
                 payload: {
                     id: props.id,
                     value: localValue,

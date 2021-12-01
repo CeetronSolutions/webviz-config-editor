@@ -2,7 +2,7 @@ import React from "react";
 import path from "path";
 
 import "./file-tab.css";
-import { useStore, StoreActions } from "../../Store/store";
+import { FilesStore } from "../../Store";
 import { IconButton } from "@mui/material";
 import { Close } from "@mui/icons-material";
 
@@ -15,7 +15,7 @@ export const FileTab: React.FC<FileTabProps> = (props) => {
     const [filename, setFilename] = React.useState<string>("");
     const [active, setActive] = React.useState<boolean>(false);
     const [modified, setModified] = React.useState<boolean>(false);
-    const store = useStore();
+    const store = FilesStore.useStore();
 
     React.useEffect(() => {
         const file = store.state.files.find((el) => el.uuid === props.uuid);
@@ -37,7 +37,7 @@ export const FileTab: React.FC<FileTabProps> = (props) => {
     const handleCloseEvent = (e: React.MouseEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
-        store.dispatch({ type: StoreActions.CloseFile, payload: { uuid: props.uuid } });
+        store.dispatch({ type: FilesStore.StoreActions.CloseFile, payload: { uuid: props.uuid } });
     };
 
     return (

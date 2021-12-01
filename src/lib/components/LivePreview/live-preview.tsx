@@ -1,8 +1,5 @@
 import React from "react";
-import jsYaml from "js-yaml";
 import { monaco } from "react-monaco-editor";
-import { uuid } from "uuidv4";
-import { Menu } from "@webviz/core-components";
 import {
     PropertyNavigationType,
     PropertyGroupType,
@@ -11,7 +8,7 @@ import {
 } from "@webviz/core-components/dist/components/Menu/types/navigation";
 
 import { MenuWrapper } from "../MenuWrapper";
-import { useStore, StoreActions, UpdateSource } from "../Store";
+import { FilesStore } from "../Store";
 
 import "./live-preview.css";
 import { ErrorBoundary } from "../ErrorBoundary";
@@ -35,7 +32,7 @@ export const LivePreview: React.FC<LivePreviewProps> = (props) => {
     const [currentPage, setCurrentPage] = React.useState<MenuReturnProps>({
         url: "",
     });
-    const store = useStore();
+    const store = FilesStore.useStore();
 
     React.useEffect(() => {
         if (store.state.currentYamlObjects.length === 0) {
@@ -52,10 +49,10 @@ export const LivePreview: React.FC<LivePreviewProps> = (props) => {
         const object = store.state.yamlParser.getObjectById(store.state.currentPageId);
         if (object) {
             store.dispatch({
-                type: StoreActions.UpdateSelection,
+                type: FilesStore.StoreActions.UpdateSelection,
                 payload: {
                     selection: new monaco.Selection(object.startLineNumber, 0, object.endLineNumber, 0),
-                    source: UpdateSource.Preview,
+                    source: FilesStore.UpdateSource.Preview,
                 },
             });
         }
@@ -69,7 +66,10 @@ export const LivePreview: React.FC<LivePreviewProps> = (props) => {
                 <div className="LivePreview__Menu">
                     <MenuWrapper
                         setProps={(props) =>
-                            store.dispatch({ type: StoreActions.SetCurrentPage, payload: { pageId: props.url } })
+                            store.dispatch({
+                                type: FilesStore.StoreActions.SetCurrentPage,
+                                payload: { pageId: props.url },
+                            })
                         }
                         navigationItems={navigationItems}
                         menuBarPosition="left"

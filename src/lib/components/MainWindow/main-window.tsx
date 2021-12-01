@@ -15,7 +15,8 @@ import { Preferences } from "../Preferences/preferences";
 import { ResizablePanels } from "../ResizablePanels";
 
 import { Size } from "../../types/size";
-import { useStore } from "../Store/store";
+import { FilesStore } from "../Store";
+import { Play } from "../Play";
 
 type MainWindowProps = {};
 
@@ -24,7 +25,7 @@ export const MainWindow: React.FC<MainWindowProps> = (props) => {
     const [editorSize, setEditorSize] = React.useState<Size>({ width: 0, height: 0 });
     const theme = useTheme();
     const colorMode = React.useContext(ColorModeContext);
-    const store = useStore();
+    const store = FilesStore.useStore();
 
     const mainWindowRef = React.useRef<HTMLDivElement | null>(null);
     const appBarRef = React.useRef<HTMLDivElement | null>(null);
@@ -91,6 +92,9 @@ export const MainWindow: React.FC<MainWindowProps> = (props) => {
                                     <Editor />
                                     <LivePreview />
                                 </ResizablePanels>
+                            </Route>
+                            <Route path="/play">
+                                <Play />
                             </Route>
                             <Route path="/settings">
                                 <Preferences />
