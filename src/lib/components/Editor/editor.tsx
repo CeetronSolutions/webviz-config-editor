@@ -17,9 +17,18 @@ import EditorWorker from "worker-loader!monaco-editor/esm/vs/editor/editor.worke
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import YamlWorker from "worker-loader!monaco-yaml/lib/esm/yaml.worker";
 import { FileTabs } from "../FileTabs";
-import { FolderOpen, InsertDriveFile } from "@mui/icons-material";
+import {
+    AssistantPhoto,
+    Cancel,
+    Error as ErrorIcon,
+    FolderOpen,
+    Info,
+    InsertDriveFile,
+    Warning,
+} from "@mui/icons-material";
 import { Button, Tooltip } from "@mui/material";
 import { preprocessJsonSchema } from "../../utils/json-schema-preprocessor";
+import { ResizablePanels } from "../ResizablePanels";
 
 declare global {
     interface Window {
@@ -47,9 +56,11 @@ export const Editor: React.FC<EditorProps> = (props) => {
     const [noModels, setNoModels] = React.useState<boolean>(false);
     const [selection, setSelection] = React.useState<monaco.ISelection | null>(null);
     const [lineDecorations, setLineDecorations] = React.useState<string[]>([]);
+    const [markers, setMarkers] = React.useState<monaco.editor.IMarker[]>([]);
 
-    const monacoRef = React.useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+    const monacoEditorRef = React.useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
     const editorRef = React.useRef<HTMLDivElement | null>(null);
+    const monacoRef = React.useRef<typeof monaco | null>(null);
 
     const store = FilesStore.useStore();
     const [totalWidth, totalHeight] = useSize(editorRef);
@@ -103,16 +114,16 @@ export const Editor: React.FC<EditorProps> = (props) => {
 
     const updateLineDecorations = React.useCallback(
         (newDecorations: monaco.editor.IModelDeltaDecoration[]) => {
-            if (!monacoRef.current) {
+            if (!monacoEditorRef.current) {
                 return;
             }
-            setLineDecorations(monacoRef.current.deltaDecorations(lineDecorations, newDecorations));
+            setLineDecorations(monacoEditorRef.current.deltaDecorations(lineDecorations, newDecorations));
         },
         [lineDecorations]
     );
 
     React.useEffect(() => {
-        if (monacoRef.current && selection && store.state.selectedYamlObject) {
+        if (monacoEditorRef.current && selection && store.state.selectedYamlObject) {
             updateLineDecorations([
                 {
                     range: new monaco.Range(
@@ -128,7 +139,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                 },
             ]);
             if (store.state.updateSource !== FilesStore.UpdateSource.Editor) {
-                monacoRef.current.revealLinesInCenterIfOutsideViewport(
+                monacoEditorRef.current.revealLinesInCenterIfOutsideViewport(
                     store.state.selectedYamlObject.startLineNumber,
                     store.state.selectedYamlObject.endLineNumber
                 );
@@ -138,30 +149,44 @@ export const Editor: React.FC<EditorProps> = (props) => {
 
     const handleFileChange = (uuid: string) => {
         const file = store.state.files.find((el) => el.uuid === store.state.activeFileUuid);
-        if (file && monacoRef.current) {
+        if (file && monacoEditorRef.current) {
             store.dispatch({
                 type: FilesStore.StoreActions.SetActiveFile,
-                payload: { uuid: uuid, viewState: monacoRef.current.saveViewState() },
+                payload: { uuid: uuid, viewState: monacoEditorRef.current.saveViewState() },
             });
         }
+        handleMarkersChange();
     };
 
     const handleEditorValueChange = (value: string) => {
         store.dispatch({ type: FilesStore.StoreActions.UpdateCurrentContent, payload: { content: value } });
     };
 
-    const handleEditorDidMount: EditorDidMount = (editor) => {
-        monacoRef.current = editor;
-        monacoRef.current.onDidChangeCursorPosition(handleCursorPositionChange);
-        monacoRef.current.onDidChangeCursorSelection(handleCursorSelectionChange);
+    const handleMarkersChange = () => {
+        if (!monacoRef.current || !monacoEditorRef.current) {
+            return;
+        }
+        setMarkers(
+            monacoRef.current.editor
+                .getModelMarkers({})
+                .filter((el) => el.resource.fsPath === monacoEditorRef.current?.getModel()?.uri.path || "")
+        );
+    };
+
+    const handleEditorDidMount: EditorDidMount = (editor, monaco) => {
+        monacoEditorRef.current = editor;
+        monacoRef.current = monaco;
+        monacoEditorRef.current.onDidChangeCursorPosition(handleCursorPositionChange);
+        monacoEditorRef.current.onDidChangeCursorSelection(handleCursorSelectionChange);
+        monacoRef.current.editor.onDidChangeMarkers(handleMarkersChange);
     };
 
     React.useEffect(() => {
-        if (!monacoRef || !monacoRef.current) {
+        if (!monacoEditorRef || !monacoEditorRef.current) {
             return;
         }
-        monacoRef.current.updateOptions({ fontSize: 12 * fontSize });
-    }, [fontSize, monacoRef]);
+        monacoEditorRef.current.updateOptions({ fontSize: 12 * fontSize });
+    }, [fontSize, monacoEditorRef]);
 
     React.useEffect(() => {
         const file = store.state.files.find((el) => el.uuid === store.state.activeFileUuid);
@@ -169,12 +194,12 @@ export const Editor: React.FC<EditorProps> = (props) => {
             setNoModels(true);
             return;
         }
-        if (monacoRef.current && file.editorModel !== monacoRef.current.getModel()) {
-            monacoRef.current.setModel(file.editorModel);
+        if (monacoEditorRef.current && file.editorModel !== monacoEditorRef.current.getModel()) {
+            monacoEditorRef.current.setModel(file.editorModel);
             if (file.editorViewState) {
-                monacoRef.current.restoreViewState(file.editorViewState);
+                monacoEditorRef.current.restoreViewState(file.editorViewState);
             }
-            monacoRef.current.focus();
+            monacoEditorRef.current.focus();
             setNoModels(false);
         }
     }, [store.state.activeFileUuid, store.state.files]);
@@ -205,6 +230,15 @@ export const Editor: React.FC<EditorProps> = (props) => {
 
     const handleNewFileClick = () => {
         store.dispatch({ type: FilesStore.StoreActions.AddNewFile, payload: {} });
+    };
+
+    const selectMarker = (marker: monaco.editor.IMarker) => {
+        if (monacoEditorRef.current) {
+            monacoEditorRef.current.setSelection(
+                new monaco.Range(marker.startLineNumber, marker.startColumn, marker.endLineNumber, marker.endColumn)
+            );
+            monacoEditorRef.current.revealLinesInCenterIfOutsideViewport(marker.startLineNumber, marker.endLineNumber);
+        }
     };
 
     return (
@@ -240,27 +274,45 @@ export const Editor: React.FC<EditorProps> = (props) => {
                     ))}
                 </ul>
             </div>
-            <div className="Editor" ref={editorRef}>
-                <FileTabs onFileChange={handleFileChange} />
-                <MonacoEditor
-                    language="yaml"
-                    defaultValue=""
-                    className="YamlEditor"
-                    editorDidMount={handleEditorDidMount}
-                    editorWillMount={handleEditorWillMount}
-                    onChange={handleEditorValueChange}
-                    theme="vs-dark"
-                    options={{ tabSize: 2, insertSpaces: true, quickSuggestions: { other: true, strings: true } }}
-                    width={totalWidth}
-                />
-                <div className="EditorSettings">
-                    <select value={fontSize} onChange={(event) => setFontSize(parseFloat(event.target.value))}>
-                        {fontSizes.map((size) => (
-                            <option value={size} key={size}>{`${Math.floor(size * 100)} %`}</option>
-                        ))}
-                    </select>
+            <ResizablePanels direction="vertical">
+                <div className="Editor" ref={editorRef}>
+                    <FileTabs onFileChange={handleFileChange} />
+                    <MonacoEditor
+                        language="yaml"
+                        defaultValue=""
+                        className="YamlEditor"
+                        editorDidMount={handleEditorDidMount}
+                        editorWillMount={handleEditorWillMount}
+                        onChange={handleEditorValueChange}
+                        theme="vs-dark"
+                        options={{ tabSize: 2, insertSpaces: true, quickSuggestions: { other: true, strings: true } }}
+                        width={totalWidth - 16}
+                        height={totalHeight - 65}
+                    />
                 </div>
-            </div>
+                <div className="Problems">
+                    <div className="ProblemsTitle">Problems</div>
+                    <div className="ProblemsContent">
+                        {markers.map((marker) => (
+                            <div className="Problem" onClick={() => selectMarker(marker)}>
+                                {marker.severity === monaco.MarkerSeverity.Error ? (
+                                    <ErrorIcon color="error" fontSize="small" />
+                                ) : marker.severity === monaco.MarkerSeverity.Warning ? (
+                                    <Warning color="warning" fontSize="small" />
+                                ) : marker.severity === monaco.MarkerSeverity.Info ? (
+                                    <Info color="info" fontSize="small" />
+                                ) : (
+                                    <AssistantPhoto color="primary" fontSize="small" />
+                                )}{" "}
+                                {marker.message}
+                                <span className="ProblemPosition">
+                                    [{marker.startLineNumber}, {marker.startColumn}]
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </ResizablePanels>
         </div>
     );
 };

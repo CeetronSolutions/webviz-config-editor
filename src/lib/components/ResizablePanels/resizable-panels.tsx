@@ -4,6 +4,7 @@ import React from "react";
 import "./resizable-panels.css";
 
 type ResizablePanelsProps = {
+    direction: "horizontal" | "vertical";
     children: React.ReactNode[];
 };
 
@@ -25,7 +26,7 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
     React.useEffect(() => {
         setSizes(props.children.map((_) => 100 / props.children.length));
         resizablePanelRefs.current = resizablePanelRefs.current.slice(0, props.children.length);
-    }, [props.children]);
+    }, [props.children.length]);
 
     const startResize = React.useCallback(
         (event: React.MouseEvent<HTMLDivElement, MouseEvent>, index: number) => {
@@ -38,28 +39,58 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
     );
 
     React.useEffect(() => {
-        const resize = (event: MouseEvent) => {
-            if (!isDragging) {
-                return;
-            }
-            const totalSize = resizablePanelsRef.current?.getBoundingClientRect().width || 0;
-            const firstElement = resizablePanelRefs.current[currentIndex];
-            const secondElement = resizablePanelRefs.current[currentIndex + 1];
-            if (firstElement && secondElement) {
-                const newSizes = sizes.map((size, index) => {
-                    if (index === currentIndex) {
-                        const newSize = event.clientX - firstElement.getBoundingClientRect().left;
-                        return (newSize / totalSize) * 100;
-                    } else if (index === currentIndex + 1) {
-                        const newSize = secondElement.getBoundingClientRect().right - event.clientX;
-                        return (newSize / totalSize) * 100;
-                    } else {
-                        return size;
-                    }
-                }) as number[];
-                setSizes(newSizes);
-            }
-        };
+        let resize: ((e: MouseEvent) => void) | undefined = undefined;
+        if (props.direction === "horizontal") {
+            resize = (event: MouseEvent) => {
+                if (!isDragging) {
+                    return;
+                }
+                const totalSize = resizablePanelsRef.current?.getBoundingClientRect().width || 0;
+                const firstElement = resizablePanelRefs.current[currentIndex];
+                const secondElement = resizablePanelRefs.current[currentIndex + 1];
+                if (firstElement && secondElement) {
+                    const newSizes = sizes.map((size, index) => {
+                        if (index === currentIndex) {
+                            const newSize = event.clientX - firstElement.getBoundingClientRect().left;
+                            return (newSize / totalSize) * 100;
+                        } else if (index === currentIndex + 1) {
+                            const newSize = secondElement.getBoundingClientRect().right - event.clientX;
+                            return (newSize / totalSize) * 100;
+                        } else {
+                            return size;
+                        }
+                    }) as number[];
+                    setSizes(newSizes);
+                }
+            };
+        } else if (props.direction === "vertical") {
+            resize = (event: MouseEvent) => {
+                if (!isDragging) {
+                    return;
+                }
+                const totalSize = resizablePanelsRef.current?.getBoundingClientRect().height || 0;
+                const firstElement = resizablePanelRefs.current[currentIndex];
+                const secondElement = resizablePanelRefs.current[currentIndex + 1];
+                if (firstElement && secondElement) {
+                    const newSizes = sizes.map((size, index) => {
+                        if (index === currentIndex) {
+                            const newSize = event.clientY - firstElement.getBoundingClientRect().top;
+                            return (newSize / totalSize) * 100;
+                        } else if (index === currentIndex + 1) {
+                            const newSize = secondElement.getBoundingClientRect().bottom - event.clientY;
+                            return (newSize / totalSize) * 100;
+                        } else {
+                            return size;
+                        }
+                    }) as number[];
+                    setSizes(newSizes);
+                }
+            };
+        }
+
+        if (!resize) {
+            return;
+        }
 
         const stopResize = (event: MouseEvent) => {
             window.removeEventListener("selectstart", (e) => e.preventDefault());
@@ -69,15 +100,20 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
         document.addEventListener("mouseup", stopResize);
 
         return () => {
-            document.removeEventListener("mousemove", resize);
+            if (resize) {
+                document.removeEventListener("mousemove", resize);
+            }
             document.removeEventListener("mouseup", stopResize);
         };
     }, [isDragging, setIsDragging, sizes, setSizes]);
 
     return (
-        <div className="ResizablePanelsWrapper" ref={resizablePanelsRef}>
+        <div
+            className={`ResizablePanelsWrapper${props.direction === "horizontal" ? "Horizontal" : "Vertical"}`}
+            ref={resizablePanelsRef}
+        >
             <div
-                className="ResizablePanelsOverlay"
+                className={`ResizablePanelsOverlay${props.direction === "horizontal" ? "Horizontal" : "Vertical"}`}
                 style={{ width: totalWidth, height: totalHeight, display: isDragging ? "block" : "none" }}
             />
             {props.children.map((el: React.ReactNode, index: number) => (
@@ -85,13 +121,19 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
                     <div
                         className="ResizablePanel"
                         ref={(el) => (resizablePanelRefs.current[index] = el)}
-                        style={{ width: `calc(${sizes[index]}% - 3px)` }}
+                        style={
+                            props.direction === "horizontal"
+                                ? { width: `calc(${sizes[index]}% - 3px)` }
+                                : { height: `calc(${sizes[index]}% - 3px)` }
+                        }
                     >
                         {el}
                     </div>
                     {index < props.children.length - 1 && (
                         <div
-                            className={`ResizeDragBar${isDragging ? " ResizeDragBar--active" : ""}`}
+                            className={`ResizeDragBar ResizeDragBar__${props.direction}${
+                                isDragging ? " ResizeDragBar--active" : ""
+                            }`}
                             onMouseDown={(e) => startResize(e, index)}
                         ></div>
                     )}

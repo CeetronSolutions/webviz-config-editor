@@ -1,6 +1,7 @@
 .EditorWrapper {
     position: relative;
     height: 100%;
+    background-color: rgb(32, 32, 32);
 }
 
 .Editor {
@@ -8,7 +9,7 @@
     flex-direction: column;
     overflow: visible;
     height: 100%;
-    background-color: rgb(32, 32, 32);
+    overflow: auto;
 }
 
 .EditorInput {
@@ -46,4 +47,48 @@
     background: rgb(255, 208, 54);
     width: 5px !important;
     margin-left: 4px;
+}
+
+.YamlEditor {
+    height: auto;
+}
+
+.Problems {
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.ProblemsTitle {
+    background-color: rgb(61, 61, 61);
+    color: white;
+    padding: 8px;
+    font-size: 0.8em;
+}
+
+.ProblemsContent {
+    color: white;
+    overflow: auto;
+}
+
+.Problem {
+    padding: 8px;
+    font-size: 0.8em;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.Problem svg {
+    margin-right: 8px;
+}
+
+.Problem:hover {
+    background-color: rgb(36, 36, 36);
+}
+
+.ProblemPosition {
+    margin-left: 8px;
+    color: rgb(160, 160, 160);
 }

@@ -88,7 +88,7 @@ export const MainWindow: React.FC<MainWindowProps> = (props) => {
                     <div className="Content">
                         <Switch>
                             <Route exact path="/">
-                                <ResizablePanels>
+                                <ResizablePanels direction="horizontal">
                                     <Editor />
                                     <LivePreview />
                                 </ResizablePanels>
