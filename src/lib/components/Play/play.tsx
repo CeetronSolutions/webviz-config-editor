@@ -5,6 +5,9 @@ import { CircularProgress } from "@mui/material";
 
 import { SettingsStore } from "../Store";
 import { useNotifications, NotificationType } from "../Notifications";
+import { OpenInBrowser } from "@mui/icons-material";
+
+import "./play.css";
 
 export const Play: React.FC = () => {
     const store = SettingsStore.useStore();
@@ -86,7 +89,13 @@ export const Play: React.FC = () => {
     return (
         <div className="Play">
             {loading && <CircularProgress />}
-            {!loading && <iframe src="http://localhost:5000" style={{ width: "100%", height: "100%" }}></iframe>}
+            {!loading && (
+                <>
+                    <OpenInBrowser fontSize="large" color="action" />
+                    <br />
+                    <h4>Please wait until the browser window opens.</h4>
+                </>
+            )}
         </div>
     );
 };
