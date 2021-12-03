@@ -1,14 +1,20 @@
 export interface Setting {
     id: string;
-    value: string | number;
+    value: string | number | boolean;
 }
+
+export type FileFilter = {
+    name: string;
+    extensions: string[];
+};
 
 export interface SettingMeta {
     id: string;
     label: string;
     description: string;
-    type: "string" | "number" | "file" | "pythonInterpreter";
-    defaultValue: string | number;
+    type: "string" | "number" | "file" | "pythonInterpreter" | "theme";
+    defaultValue: string | number | boolean;
+    fileFilter?: FileFilter[];
 }
 
 export const Settings: { [key: string]: SettingMeta[] } = {
@@ -21,21 +27,25 @@ export const Settings: { [key: string]: SettingMeta[] } = {
             defaultValue: "",
         },
     ],
-    "Webviz Schema": [
+    Webviz: [
         {
             id: "schema",
             label: "Webviz Schema",
             description: "Select the Webviz schema file.",
             type: "file",
             defaultValue: "",
+            fileFilter: [
+                {
+                    name: "Webviz JSON Schema File",
+                    extensions: ["json"],
+                },
+            ],
         },
-    ],
-    Theme: [
         {
             id: "theme",
             label: "Theme",
             description: "Select the theme you want to use with Webviz.",
-            type: "string",
+            type: "theme",
             defaultValue: "",
         },
     ],

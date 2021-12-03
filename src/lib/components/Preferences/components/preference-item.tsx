@@ -1,12 +1,28 @@
 import React from "react";
-import { Typography, TextField, Grid, CircularProgress } from "@mui/material";
+import {
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    Typography,
+    TextField,
+    Grid,
+    CircularProgress,
+    Tooltip,
+    Select,
+    Button,
+    MenuItem,
+} from "@mui/material";
 import * as fs from "fs";
 import { execSync } from "child_process";
 import * as which from "which";
 
-import { SettingMeta } from "../../../utils/settings";
+import { SettingMeta, Setting } from "../../../utils/settings";
 import { SettingsStore } from "../../Store";
 import { Autocomplete } from "@mui/material";
+
+import "./preference-item.css";
 
 enum PreferenceItemState {
     VALIDATING = 0,
@@ -22,8 +38,10 @@ enum PreferenceItemLoadingState {
 
 export const PreferenceItem: React.FC<SettingMeta> = (props) => {
     const store = SettingsStore.useStore();
-    const [localValue, setLocalValue] = React.useState<string | number>("");
-    const [installations, setInstallations] = React.useState<string[]>([]);
+    const [localValue, setLocalValue] = React.useState<string | number | boolean>("");
+    const [tempValue, setTempValue] = React.useState<string>("");
+    const [options, setOptions] = React.useState<string[]>([]);
+    const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
     const [loadingState, setLoadingState] = React.useState<PreferenceItemLoadingState>(
         props.type === "pythonInterpreter" ? PreferenceItemLoadingState.LOADING : PreferenceItemLoadingState.LOADED
     );
@@ -34,7 +52,7 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
 
     React.useEffect(() => {
         setLoadingState(PreferenceItemLoadingState.LOADING);
-        setLocalValue(store.state.settings.find((el) => el.id === props.id)?.value || "");
+        setLocalValue(store.state.settings.find((el: Setting) => el.id === props.id)?.value || "");
         try {
             which.default(
                 "python",
@@ -46,26 +64,26 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                             { all: true },
                             (err: Error | null, resolvedPaths: string | readonly string[] | undefined) => {
                                 if (err) {
-                                    setInstallations([]);
+                                    setOptions([]);
                                     setLoadingState(PreferenceItemLoadingState.ERROR);
                                 }
                                 if (resolvedPaths === undefined) {
-                                    setInstallations([]);
+                                    setOptions([]);
                                 } else if (resolvedPaths.constructor === Array) {
-                                    setInstallations(resolvedPaths);
+                                    setOptions(resolvedPaths);
                                 } else if (resolvedPaths.constructor === String) {
-                                    setInstallations([resolvedPaths as string]);
+                                    setOptions([resolvedPaths as string]);
                                 }
                                 setLoadingState(PreferenceItemLoadingState.LOADED);
                             }
                         );
                     } else {
                         if (resolvedPaths === undefined) {
-                            setInstallations([]);
+                            setOptions([]);
                         } else if (resolvedPaths.constructor === Array) {
-                            setInstallations(resolvedPaths);
+                            setOptions(resolvedPaths);
                         } else if (resolvedPaths.constructor === String) {
-                            setInstallations([resolvedPaths as string]);
+                            setOptions([resolvedPaths as string]);
                         }
                         setLoadingState(PreferenceItemLoadingState.LOADED);
                     }
@@ -78,25 +96,25 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                     { all: true },
                     (err: Error | null, resolvedPaths: string | readonly string[] | undefined) => {
                         if (err) {
-                            setInstallations([]);
+                            setOptions([]);
                             setLoadingState(PreferenceItemLoadingState.ERROR);
                         }
                         if (resolvedPaths === undefined) {
-                            setInstallations([]);
+                            setOptions([]);
                         } else if (resolvedPaths.constructor === Array) {
-                            setInstallations(resolvedPaths);
+                            setOptions(resolvedPaths);
                         } else if (resolvedPaths.constructor === String) {
-                            setInstallations([resolvedPaths as string]);
+                            setOptions([resolvedPaths as string]);
                         }
                         setLoadingState(PreferenceItemLoadingState.LOADED);
                     }
                 );
             } catch (err) {
-                setInstallations([]);
+                setOptions([]);
                 setLoadingState(PreferenceItemLoadingState.ERROR);
             }
         }
-    }, [setInstallations, setLoadingState]);
+    }, [setOptions, setLoadingState]);
 
     React.useEffect(() => {
         setState({ state: PreferenceItemState.VALID, message: "" });
@@ -139,15 +157,23 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
         }
     }, [localValue]);
 
+    const handleValueChanged = (value: string | number | boolean) => {
+        if (props.type === "pythonInterpreter") {
+            if (value === "custom") {
+                setDialogOpen(true);
+                return;
+            }
+        }
+        setLocalValue(value);
+    };
+
+    const openPythonInterpreterDialog = () => {};
+
     return (
-        <Grid className="PreferenceItem" container spacing={2} direction="column">
-            <Grid item>
-                <Typography variant="h6">{props.label}</Typography>
-            </Grid>
-            <Grid item>
-                <Typography variant="body2">{props.description}</Typography>
-            </Grid>
-            <Grid item>
+        <div className="PreferenceItem">
+            <span className="PreferenceTitle">{props.label}</span>
+            <span className="PreferenceDescription">{props.description}</span>
+            <div className="PreferenceValue">
                 {props.type === "string" && (
                     <TextField
                         id={props.id}
@@ -160,32 +186,78 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                 {props.type === "pythonInterpreter" && (
                     <>
                         {loadingState === PreferenceItemLoadingState.LOADING && <CircularProgress />}
-                        {loadingState !== PreferenceItemLoadingState.LOADING && (
-                            <Autocomplete
-                                id={props.id}
-                                options={installations}
-                                getOptionLabel={(option) => option}
-                                onChange={(_: React.ChangeEvent<unknown>, newValue: string | null) =>
-                                    setLocalValue(newValue !== null ? newValue : "")
+                        {loadingState === PreferenceItemLoadingState.LOADED && (
+                            <Select
+                                value={
+                                    options.includes(localValue as string) || localValue === "" ? localValue : "custom"
                                 }
-                                value={localValue as string}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        type="string"
-                                        value={localValue as string}
-                                        error={state.state === PreferenceItemState.INVALID}
-                                        helperText={state.message}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                            setLocalValue(e.target.value)
-                                        }
-                                    />
-                                )}
+                                onChange={(e) => handleValueChanged(e.target.value)}
+                                className="PreferenceInput"
+                                displayEmpty
+                            >
+                                {options.map((option) => (
+                                    <MenuItem value={option}>{option}</MenuItem>
+                                ))}
+                                <MenuItem value="custom">Custom...</MenuItem>
+                            </Select>
+                        )}
+                        <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+                            <DialogTitle>Path to Python Interpreter</DialogTitle>
+                            <DialogContent>
+                                <DialogContentText>{props.description}</DialogContentText>
+                                <TextField
+                                    margin="dense"
+                                    type="file"
+                                    variant="outlined"
+                                    onChange={(e) => setTempValue(e.target.value)}
+                                />
+                            </DialogContent>
+                            <DialogActions>
+                                <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+                                <Button
+                                    onClick={() => {
+                                        setDialogOpen(false);
+                                        setLocalValue(tempValue);
+                                    }}
+                                >
+                                    Save
+                                </Button>
+                            </DialogActions>
+                        </Dialog>
+                    </>
+                )}
+                {props.type === "theme" && (
+                    <>
+                        {loadingState === PreferenceItemLoadingState.LOADING && <CircularProgress />}
+                        {loadingState === PreferenceItemLoadingState.LOADED && (
+                            <Select
+                                value={localValue}
+                                onChange={(e) => handleValueChanged(e.target.value)}
+                                className="PreferenceInput"
+                                displayEmpty
+                            >
+                                {options.map((option) => (
+                                    <MenuItem value={option}>{option}</MenuItem>
+                                ))}
+                            </Select>
+                        )}
+                    </>
+                )}
+                {props.type === "file" && (
+                    <>
+                        {loadingState === PreferenceItemLoadingState.LOADING && <CircularProgress />}
+                        {loadingState === PreferenceItemLoadingState.LOADED && (
+                            <TextField
+                                className="PreferenceInput"
+                                hiddenLabel
+                                defaultValue={localValue}
+                                variant="filled"
+                                size="small"
                             />
                         )}
                     </>
                 )}
-            </Grid>
-        </Grid>
+            </div>
+        </div>
     );
 };

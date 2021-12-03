@@ -10,7 +10,7 @@ import { LogEntry, LogEntryType } from "../../../types/log";
 
 type ActionMap<
     M extends {
-        [index: string]: { [key: string]: string | number | Setting[] | object | null };
+        [index: string]: { [key: string]: string | number | Setting[] | object | null | boolean };
     }
 > = {
     [Key in keyof M]: M[Key] extends undefined
@@ -62,7 +62,7 @@ type Payload = {
     };
     [StoreActions.SetSetting]: {
         id: string;
-        value: string | number;
+        value: string | number | boolean;
     };
 };
 

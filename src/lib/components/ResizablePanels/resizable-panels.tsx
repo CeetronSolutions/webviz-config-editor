@@ -24,7 +24,11 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
     const [totalWidth, totalHeight] = useSize(resizablePanelsRef);
 
     React.useEffect(() => {
-        setSizes(props.children.map((_) => 100 / props.children.length));
+        const sizes: number[] = [];
+        for (let i = 0; i < props.children.length; i++) {
+            sizes.push(100 / props.children.length);
+        }
+        setSizes(sizes);
         resizablePanelRefs.current = resizablePanelRefs.current.slice(0, props.children.length);
     }, [props.children.length]);
 
@@ -105,7 +109,7 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
             }
             document.removeEventListener("mouseup", stopResize);
         };
-    }, [isDragging, setIsDragging, sizes, setSizes]);
+    }, [isDragging, setIsDragging, sizes, setSizes, props.direction, currentIndex]);
 
     return (
         <div
