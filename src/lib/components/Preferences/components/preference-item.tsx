@@ -5,11 +5,8 @@ import {
     DialogContent,
     DialogContentText,
     DialogTitle,
-    Typography,
     TextField,
-    Grid,
     CircularProgress,
-    Tooltip,
     Select,
     Button,
     MenuItem,
@@ -17,12 +14,14 @@ import {
 import * as fs from "fs";
 import { execSync } from "child_process";
 import * as which from "which";
+import * as path from "path";
 
-import { SettingMeta, Setting } from "../../../utils/settings";
+import { SettingMeta, Setting, FileFilter } from "../../../utils/settings";
 import { SettingsStore } from "../../Store";
-import { Autocomplete } from "@mui/material";
 
 import "./preference-item.css";
+
+const { dialog } = require("@electron/remote");
 
 enum PreferenceItemState {
     VALIDATING = 0,
@@ -167,7 +166,19 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
         setLocalValue(value);
     };
 
-    const openPythonInterpreterDialog = () => {};
+    const openFileDialog = (filter: FileFilter[], defaultPath: string) => {
+        dialog
+            .showOpenDialog({
+                properties: ["openFile"],
+                filters: filter,
+                defaultPath: defaultPath,
+            })
+            .then((fileObj: Electron.OpenDialogReturnValue) => {
+                if (!fileObj.canceled) {
+                    setTempValue(fileObj.filePaths[0]);
+                }
+            });
+    };
 
     return (
         <div className="PreferenceItem">
@@ -188,9 +199,7 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                         {loadingState === PreferenceItemLoadingState.LOADING && <CircularProgress />}
                         {loadingState === PreferenceItemLoadingState.LOADED && (
                             <Select
-                                value={
-                                    options.includes(localValue as string) || localValue === "" ? localValue : "custom"
-                                }
+                                value={localValue}
                                 onChange={(e) => handleValueChanged(e.target.value)}
                                 className="PreferenceInput"
                                 displayEmpty
@@ -198,7 +207,10 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                                 {options.map((option) => (
                                     <MenuItem value={option}>{option}</MenuItem>
                                 ))}
-                                <MenuItem value="custom">Custom...</MenuItem>
+                                {!options.includes(localValue as string) && (
+                                    <MenuItem value={localValue as string}>{localValue}</MenuItem>
+                                )}
+                                <MenuItem value="custom">Select from system...</MenuItem>
                             </Select>
                         )}
                         <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
@@ -207,10 +219,26 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                                 <DialogContentText>{props.description}</DialogContentText>
                                 <TextField
                                     margin="dense"
-                                    type="file"
+                                    type="text"
+                                    aria-readonly
                                     variant="outlined"
-                                    onChange={(e) => setTempValue(e.target.value)}
+                                    value={tempValue}
                                 />
+                                <Button
+                                    onClick={() =>
+                                        openFileDialog(
+                                            [
+                                                {
+                                                    name: "Python interpreter",
+                                                    extensions: ["*"],
+                                                },
+                                            ],
+                                            path.dirname(localValue as string)
+                                        )
+                                    }
+                                >
+                                    Change
+                                </Button>
                             </DialogContent>
                             <DialogActions>
                                 <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
