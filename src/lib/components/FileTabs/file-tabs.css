@@ -1,7 +1,6 @@
 .FileTabs {
     display: flex;
     flex-direction: row;
-    background-color: #2d2d2d;
     min-height: 38px;
     overflow: auto;
 }
@@ -15,12 +14,7 @@
 }
 
 .FileTabs::-webkit-scrollbar-thumb {
-    background-color: rgb(88, 88, 88);
     border-radius: 3px;
     border: 2px solid transparent;
     background-clip: content-box;
-}
-
-.FileTabs::-webkit-scrollbar-thumb:hover {
-    background-color: rgb(88, 88, 88);
 }

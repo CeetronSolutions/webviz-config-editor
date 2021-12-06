@@ -544,6 +544,7 @@ export class YamlParser {
                         "value" in object &&
                         object.value.constructor === Array &&
                         object.value.length > 0 &&
+                        object.value[0].constructor === Object &&
                         "id" in object.value[0]
                     ) {
                         objects = object.value as YamlObject[] | LayoutObject[];

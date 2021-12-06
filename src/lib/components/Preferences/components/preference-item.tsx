@@ -10,11 +10,13 @@ import {
     Select,
     Button,
     MenuItem,
+    Grid,
 } from "@mui/material";
 import * as fs from "fs";
 import { execSync } from "child_process";
 import * as which from "which";
 import * as path from "path";
+import { PythonShell, PythonShellError, Options } from "python-shell";
 
 import { SettingMeta, Setting, FileFilter } from "../../../utils/settings";
 import { SettingsStore } from "../../Store";
@@ -37,8 +39,9 @@ enum PreferenceItemLoadingState {
 
 export const PreferenceItem: React.FC<SettingMeta> = (props) => {
     const store = SettingsStore.useStore();
+
     const [localValue, setLocalValue] = React.useState<string | number | boolean>("");
-    const [tempValue, setTempValue] = React.useState<string>("");
+    const [tempValue, setTempValue] = React.useState<string | number | boolean>("");
     const [options, setOptions] = React.useState<string[]>([]);
     const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
     const [loadingState, setLoadingState] = React.useState<PreferenceItemLoadingState>(
@@ -50,70 +53,97 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
     });
 
     React.useEffect(() => {
-        setLoadingState(PreferenceItemLoadingState.LOADING);
         setLocalValue(store.state.settings.find((el: Setting) => el.id === props.id)?.value || "");
-        try {
-            which.default(
-                "python",
-                { all: true },
-                (err: Error | null, resolvedPaths: string | readonly string[] | undefined) => {
-                    if (err) {
-                        which.default(
-                            "python3",
-                            { all: true },
-                            (err: Error | null, resolvedPaths: string | readonly string[] | undefined) => {
-                                if (err) {
-                                    setOptions([]);
-                                    setLoadingState(PreferenceItemLoadingState.ERROR);
-                                }
-                                if (resolvedPaths === undefined) {
-                                    setOptions([]);
-                                } else if (resolvedPaths.constructor === Array) {
-                                    setOptions(resolvedPaths);
-                                } else if (resolvedPaths.constructor === String) {
-                                    setOptions([resolvedPaths as string]);
-                                }
-                                setLoadingState(PreferenceItemLoadingState.LOADED);
-                            }
-                        );
-                    } else {
-                        if (resolvedPaths === undefined) {
-                            setOptions([]);
-                        } else if (resolvedPaths.constructor === Array) {
-                            setOptions(resolvedPaths);
-                        } else if (resolvedPaths.constructor === String) {
-                            setOptions([resolvedPaths as string]);
-                        }
-                        setLoadingState(PreferenceItemLoadingState.LOADED);
-                    }
-                }
-            );
-        } catch (err) {
+    }, []);
+
+    React.useEffect(() => {
+        setTempValue(localValue);
+    }, [localValue]);
+
+    React.useEffect(() => {
+        if (props.type === "pythonInterpreter") {
+            setLoadingState(PreferenceItemLoadingState.LOADING);
             try {
                 which.default(
-                    "python3",
+                    "python",
                     { all: true },
                     (err: Error | null, resolvedPaths: string | readonly string[] | undefined) => {
                         if (err) {
-                            setOptions([]);
-                            setLoadingState(PreferenceItemLoadingState.ERROR);
+                            which.default(
+                                "python3",
+                                { all: true },
+                                (err: Error | null, resolvedPaths: string | readonly string[] | undefined) => {
+                                    if (err) {
+                                        setOptions([]);
+                                        setLoadingState(PreferenceItemLoadingState.ERROR);
+                                    }
+                                    if (resolvedPaths === undefined) {
+                                        setOptions([]);
+                                    } else if (resolvedPaths.constructor === Array) {
+                                        setOptions(resolvedPaths);
+                                    } else if (resolvedPaths.constructor === String) {
+                                        setOptions([resolvedPaths as string]);
+                                    }
+                                    setLoadingState(PreferenceItemLoadingState.LOADED);
+                                }
+                            );
+                        } else {
+                            if (resolvedPaths === undefined) {
+                                setOptions([]);
+                            } else if (resolvedPaths.constructor === Array) {
+                                setOptions(resolvedPaths);
+                            } else if (resolvedPaths.constructor === String) {
+                                setOptions([resolvedPaths as string]);
+                            }
+                            setLoadingState(PreferenceItemLoadingState.LOADED);
                         }
-                        if (resolvedPaths === undefined) {
-                            setOptions([]);
-                        } else if (resolvedPaths.constructor === Array) {
-                            setOptions(resolvedPaths);
-                        } else if (resolvedPaths.constructor === String) {
-                            setOptions([resolvedPaths as string]);
-                        }
-                        setLoadingState(PreferenceItemLoadingState.LOADED);
                     }
                 );
             } catch (err) {
-                setOptions([]);
-                setLoadingState(PreferenceItemLoadingState.ERROR);
+                try {
+                    which.default(
+                        "python3",
+                        { all: true },
+                        (err: Error | null, resolvedPaths: string | readonly string[] | undefined) => {
+                            if (err) {
+                                setOptions([]);
+                                setLoadingState(PreferenceItemLoadingState.ERROR);
+                            }
+                            if (resolvedPaths === undefined) {
+                                setOptions([]);
+                            } else if (resolvedPaths.constructor === Array) {
+                                setOptions(resolvedPaths);
+                            } else if (resolvedPaths.constructor === String) {
+                                setOptions([resolvedPaths as string]);
+                            }
+                            setLoadingState(PreferenceItemLoadingState.LOADED);
+                        }
+                    );
+                } catch (err) {
+                    setOptions([]);
+                    setLoadingState(PreferenceItemLoadingState.ERROR);
+                }
             }
+        } else if (props.type === "theme") {
+            setLoadingState(PreferenceItemLoadingState.LOADING);
+            const options: Options = {
+                mode: "json",
+                pythonPath: store.state.settings.find((el) => el.id === "python-interpreter")?.value.toString() || "",
+            };
+            PythonShell.run(
+                path.resolve("/home/ruben/repos/webviz/webviz-config-editor/", "python", "webviz_themes.py"),
+                options,
+                (err?: PythonShellError, output?: any[]) => {
+                    if (output && output.length > 0 && "themes" in output[0]) {
+                        setOptions(output[0]["themes"]);
+                        setLoadingState(PreferenceItemLoadingState.LOADED);
+                    } else {
+                        setLoadingState(PreferenceItemLoadingState.ERROR);
+                    }
+                }
+            );
         }
-    }, [setOptions, setLoadingState]);
+    }, [setOptions, setLoadingState, store.state.settings]);
 
     React.useEffect(() => {
         setState({ state: PreferenceItemState.VALID, message: "" });
@@ -130,7 +160,7 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                                 type: SettingsStore.StoreActions.SetSetting,
                                 payload: {
                                     id: props.id,
-                                    value: localValue,
+                                    value: localValue as string | number | boolean,
                                 },
                             });
                         } catch (error) {
@@ -150,11 +180,11 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                 type: SettingsStore.StoreActions.SetSetting,
                 payload: {
                     id: props.id,
-                    value: localValue,
+                    value: localValue as string | number | boolean,
                 },
             });
         }
-    }, [localValue]);
+    }, [localValue, props.id, props.type]);
 
     const handleValueChanged = (value: string | number | boolean) => {
         if (props.type === "pythonInterpreter") {
@@ -175,7 +205,11 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
             })
             .then((fileObj: Electron.OpenDialogReturnValue) => {
                 if (!fileObj.canceled) {
-                    setTempValue(fileObj.filePaths[0]);
+                    if (props.type === "pythonInterpreter") {
+                        setTempValue(fileObj.filePaths[0]);
+                    } else {
+                        setLocalValue(fileObj.filePaths[0]);
+                    }
                 }
             });
     };
@@ -199,7 +233,7 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                         {loadingState === PreferenceItemLoadingState.LOADING && <CircularProgress />}
                         {loadingState === PreferenceItemLoadingState.LOADED && (
                             <Select
-                                value={localValue}
+                                value={localValue as string | number | boolean}
                                 onChange={(e) => handleValueChanged(e.target.value)}
                                 className="PreferenceInput"
                                 displayEmpty
@@ -217,28 +251,28 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                             <DialogTitle>Path to Python Interpreter</DialogTitle>
                             <DialogContent>
                                 <DialogContentText>{props.description}</DialogContentText>
-                                <TextField
-                                    margin="dense"
-                                    type="text"
-                                    aria-readonly
-                                    variant="outlined"
-                                    value={tempValue}
-                                />
-                                <Button
-                                    onClick={() =>
-                                        openFileDialog(
-                                            [
-                                                {
-                                                    name: "Python interpreter",
-                                                    extensions: ["*"],
-                                                },
-                                            ],
-                                            path.dirname(localValue as string)
-                                        )
-                                    }
-                                >
-                                    Change
-                                </Button>
+                                <Grid container flexDirection="row" alignItems="center" spacing={2}>
+                                    <Grid item>
+                                        <TextField margin="dense" type="text" aria-readonly value={tempValue} />
+                                    </Grid>
+                                    <Grid item>
+                                        <Button
+                                            onClick={() =>
+                                                openFileDialog(
+                                                    [
+                                                        {
+                                                            name: "Python interpreter",
+                                                            extensions: ["*"],
+                                                        },
+                                                    ],
+                                                    path.dirname(localValue as string)
+                                                )
+                                            }
+                                        >
+                                            Change
+                                        </Button>
+                                    </Grid>
+                                </Grid>
                             </DialogContent>
                             <DialogActions>
                                 <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
@@ -259,11 +293,14 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                         {loadingState === PreferenceItemLoadingState.LOADING && <CircularProgress />}
                         {loadingState === PreferenceItemLoadingState.LOADED && (
                             <Select
-                                value={localValue}
+                                value={localValue as string | number | boolean}
                                 onChange={(e) => handleValueChanged(e.target.value)}
                                 className="PreferenceInput"
                                 displayEmpty
                             >
+                                <MenuItem value="">
+                                    <em>Default</em>
+                                </MenuItem>
                                 {options.map((option) => (
                                     <MenuItem value={option}>{option}</MenuItem>
                                 ))}
@@ -275,13 +312,22 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                     <>
                         {loadingState === PreferenceItemLoadingState.LOADING && <CircularProgress />}
                         {loadingState === PreferenceItemLoadingState.LOADED && (
-                            <TextField
-                                className="PreferenceInput"
-                                hiddenLabel
-                                defaultValue={localValue}
-                                variant="filled"
-                                size="small"
-                            />
+                            <>
+                                <TextField
+                                    aria-readonly
+                                    className="PreferenceInput"
+                                    hiddenLabel
+                                    value={localValue}
+                                    size="small"
+                                />
+                                <Button
+                                    onClick={() =>
+                                        openFileDialog(props.fileFilter || [], path.dirname(localValue as string))
+                                    }
+                                >
+                                    Select
+                                </Button>
+                            </>
                         )}
                     </>
                 )}

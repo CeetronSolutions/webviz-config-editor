@@ -1,7 +1,6 @@
 .EditorWrapper {
     position: relative;
     height: 100%;
-    background-color: rgb(32, 32, 32);
 }
 
 .Editor {
@@ -25,19 +24,16 @@
 }
 
 .EditorInfo {
-    color: white;
     text-align: right;
     flex-grow: 4;
 }
 
 .Editor__NoModels {
-    color: #eee;
     margin: auto;
     position: absolute;
     z-index: 10;
     top: 0;
     left: 0;
-    background-color: rgb(32, 32, 32);
     width: 100%;
     box-sizing: border-box;
     padding: 48px;
@@ -60,14 +56,17 @@
 }
 
 .ProblemsTitle {
-    background-color: rgb(61, 61, 61);
-    color: white;
-    padding: 8px;
+    padding: 12px;
     font-size: 0.8em;
+    display: flex;
+    align-items: center;
+}
+
+.ProblemsTitle > strong {
+    margin-left: 8px;
 }
 
 .ProblemsContent {
-    color: white;
     overflow: auto;
 }
 
@@ -84,11 +83,6 @@
     margin-right: 8px;
 }
 
-.Problem:hover {
-    background-color: rgb(36, 36, 36);
-}
-
 .ProblemPosition {
     margin-left: 8px;
-    color: rgb(160, 160, 160);
 }

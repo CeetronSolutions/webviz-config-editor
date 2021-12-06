@@ -10,7 +10,7 @@ import { LogEntry, LogEntryType } from "../../../types/log";
 
 type ActionMap<
     M extends {
-        [index: string]: { [key: string]: Config | unknown };
+        [index: string]: { [key: string]: string | Config };
     }
 > = {
     [Key in keyof M]: M[Key] extends undefined
@@ -57,8 +57,7 @@ export type StoreState = {
 
 type Payload = {
     [StoreActions.SetConfig]: {
-        id: string;
-        config: unknown;
+        config: Config;
     };
 };
 
@@ -82,15 +81,25 @@ export const StoreReducerInit = (initialState: StoreState): StoreState => {
 export const StoreReducer = (state: StoreState, action: Actions): StoreState => {
     switch (action.type) {
         case StoreActions.SetConfig:
-            const newConfig = state.config.map((config) => ({
-                id: config.id,
-                config: config.id === action.payload.id ? action.payload.config : config.config,
-            }));
-            writeConfig(newConfig);
-            return {
-                ...state,
-                config: newConfig,
-            };
+            let newConfig: Config[] = [];
+            if (state.config.find((config) => config.id === action.payload.config.id) !== undefined) {
+                newConfig = state.config.map((config) => ({
+                    id: config.id,
+                    config: config.id === action.payload.config.id ? action.payload.config.config : config.config,
+                }));
+            } else {
+                newConfig = state.config;
+                newConfig.push(action.payload.config);
+            }
+
+            if (writeConfig(newConfig)) {
+                return {
+                    ...state,
+                    config: newConfig,
+                };
+            } else {
+                return state;
+            }
     }
 };
 

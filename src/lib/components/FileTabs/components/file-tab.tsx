@@ -3,7 +3,7 @@ import path from "path";
 
 import "./file-tab.css";
 import { FilesStore } from "../../Store";
-import { IconButton } from "@mui/material";
+import { useTheme } from "@mui/material";
 import { Close } from "@mui/icons-material";
 
 export type FileTabProps = {
@@ -16,6 +16,8 @@ export const FileTab: React.FC<FileTabProps> = (props) => {
     const [active, setActive] = React.useState<boolean>(false);
     const [modified, setModified] = React.useState<boolean>(false);
     const store = FilesStore.useStore();
+
+    const theme = useTheme();
 
     React.useEffect(() => {
         const file = store.state.files.find((el) => el.uuid === props.uuid);
@@ -44,6 +46,10 @@ export const FileTab: React.FC<FileTabProps> = (props) => {
         <div
             className={`FileTab${active ? " FileTab--active" : ""}${modified ? " FileTab--modified" : ""}`}
             onClick={() => handleClickEvent()}
+            style={{
+                backgroundColor: active ? theme.palette.action.disabledBackground : theme.palette.background.paper,
+                color: theme.palette.text.primary,
+            }}
         >
             {filename}
             <div className="FileTab__CloseButton" onClick={(e) => handleCloseEvent(e)}>

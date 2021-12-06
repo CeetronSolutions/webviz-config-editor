@@ -1,9 +1,12 @@
 import useSize from "@react-hook/size";
 import React from "react";
 
+import { ConfigStore } from "../Store";
+
 import "./resizable-panels.css";
 
 type ResizablePanelsProps = {
+    id: string;
     direction: "horizontal" | "vertical";
     children: React.ReactNode[];
 };
@@ -22,15 +25,21 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
     const resizablePanelRefs = React.useRef<(HTMLDivElement | null)[]>([]);
 
     const [totalWidth, totalHeight] = useSize(resizablePanelsRef);
+    const store = ConfigStore.useStore();
 
     React.useEffect(() => {
+        const storedSizes = store.state.config.find((el) => el.id === props.id);
+        if (storedSizes && storedSizes.config.length === props.children.length) {
+            setSizes(storedSizes.config as number[]);
+            return;
+        }
         const sizes: number[] = [];
         for (let i = 0; i < props.children.length; i++) {
             sizes.push(100 / props.children.length);
         }
         setSizes(sizes);
         resizablePanelRefs.current = resizablePanelRefs.current.slice(0, props.children.length);
-    }, [props.children.length]);
+    }, [props.children.length, store.state.config, props.id]);
 
     const startResize = React.useCallback(
         (event: React.MouseEvent<HTMLDivElement, MouseEvent>, index: number) => {
@@ -99,6 +108,10 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
         const stopResize = (event: MouseEvent) => {
             window.removeEventListener("selectstart", (e) => e.preventDefault());
             setIsDragging(false);
+            store.dispatch({
+                type: ConfigStore.StoreActions.SetConfig,
+                payload: { config: { id: props.id, config: sizes } },
+            });
         };
         document.addEventListener("mousemove", resize);
         document.addEventListener("mouseup", stopResize);
@@ -109,7 +122,7 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
             }
             document.removeEventListener("mouseup", stopResize);
         };
-    }, [isDragging, setIsDragging, sizes, setSizes, props.direction, currentIndex]);
+    }, [isDragging, setIsDragging, sizes, setSizes, props.direction, currentIndex, props.id, store]);
 
     return (
         <div

@@ -1,8 +1,6 @@
 export type Config = {
     id: string;
-    config: unknown;
+    config: number[] | Theme;
 };
 
-export type ResizablePanelsConfig = Config & {
-    config: number[];
-};
+export type Theme = "light" | "dark";

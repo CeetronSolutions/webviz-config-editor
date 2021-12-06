@@ -5,6 +5,7 @@ import { File } from "../../types/file";
 import { FileTab } from "./components/file-tab";
 
 import "./file-tabs.css";
+import { useTheme } from "@mui/material";
 
 export type FileTabsProps = {
     onFileChange: (uuid: string) => void;
@@ -12,6 +13,7 @@ export type FileTabsProps = {
 
 export const FileTabs: React.FC<FileTabsProps> = (props) => {
     const store = FilesStore.useStore();
+    const theme = useTheme();
     const [files, setFiles] = React.useState<File[]>([]);
 
     React.useEffect(() => {
@@ -19,7 +21,7 @@ export const FileTabs: React.FC<FileTabsProps> = (props) => {
     }, [store.state.files]);
 
     return (
-        <div className="FileTabs">
+        <div className="FileTabs" style={{ backgroundColor: theme.shadows[1] }}>
             {files.map((file) => (
                 <FileTab key={file.uuid} uuid={file.uuid} onSelect={(uuid: string) => props.onFileChange(uuid)} />
             ))}

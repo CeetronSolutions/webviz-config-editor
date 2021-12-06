@@ -5,28 +5,17 @@
 }
 
 .PreferenceTitle {
-    color: #fff;
     font-weight: bold;
     display: block;
     margin-bottom: 8px;
 }
 
 .PreferenceDescription {
-    color: #ececec;
     font-size: 0.8rem;
     margin-bottom: 8px;
     display: block;
 }
 
-.PreferenceInput {
-    background-color: rgb(53, 53, 53);
-    color: white;
-}
-
 .PreferenceValue {
     margin-top: 8px;
-}
-
-.PreferenceInput > * {
-    color: white;
 }

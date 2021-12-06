@@ -5,6 +5,7 @@ import { Environment } from "monaco-editor/esm/vs/editor/editor.api";
 import { setDiagnosticsOptions } from "monaco-yaml";
 import { ipcRenderer } from "electron";
 import * as path from "path";
+import { Grid, Paper } from "@mui/material";
 
 import { FilesStore } from "../Store";
 
@@ -17,16 +18,8 @@ import EditorWorker from "worker-loader!monaco-editor/esm/vs/editor/editor.worke
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import YamlWorker from "worker-loader!monaco-yaml/lib/esm/yaml.worker";
 import { FileTabs } from "../FileTabs";
-import {
-    AssistantPhoto,
-    Cancel,
-    Error as ErrorIcon,
-    FolderOpen,
-    Info,
-    InsertDriveFile,
-    Warning,
-} from "@mui/icons-material";
-import { Button, Tooltip } from "@mui/material";
+import { AssistantPhoto, Error as ErrorIcon, FolderOpen, Info, InsertDriveFile, Warning } from "@mui/icons-material";
+import { Button, Tooltip, Badge, useTheme } from "@mui/material";
 import { preprocessJsonSchema } from "../../utils/json-schema-preprocessor";
 import { ResizablePanels } from "../ResizablePanels";
 
@@ -64,6 +57,8 @@ export const Editor: React.FC<EditorProps> = (props) => {
 
     const store = FilesStore.useStore();
     const [totalWidth, totalHeight] = useSize(editorRef);
+
+    const theme = useTheme();
 
     const fontSizes = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2];
 
@@ -242,7 +237,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
     };
 
     return (
-        <div className="EditorWrapper">
+        <div className="EditorWrapper" style={{ backgroundColor: theme.palette.background.default }}>
             <div className="Editor__NoModels" style={{ display: noModels ? "block" : "none", height: totalHeight }}>
                 <h2>Webviz Config Editor</h2>
                 <h3>Start</h3>
@@ -274,7 +269,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                     ))}
                 </ul>
             </div>
-            <ResizablePanels direction="vertical">
+            <ResizablePanels direction="vertical" id="Editor-Problems">
                 <div className="Editor" ref={editorRef}>
                     <FileTabs onFileChange={handleFileChange} />
                     <MonacoEditor
@@ -284,14 +279,26 @@ export const Editor: React.FC<EditorProps> = (props) => {
                         editorDidMount={handleEditorDidMount}
                         editorWillMount={handleEditorWillMount}
                         onChange={handleEditorValueChange}
-                        theme="vs-dark"
+                        theme={theme.palette.mode === "dark" ? "vs-dark" : "vs"}
                         options={{ tabSize: 2, insertSpaces: true, quickSuggestions: { other: true, strings: true } }}
                         width={totalWidth - 16}
                         height={totalHeight - 65}
                     />
                 </div>
-                <div className="Problems">
-                    <div className="ProblemsTitle">Problems</div>
+                <div
+                    className="Problems"
+                    style={{ backgroundColor: theme.palette.background.paper, color: theme.palette.text.primary }}
+                >
+                    <Paper elevation={1} style={{ padding: 16 }} sx={{ borderRadius: 0 }}>
+                        <Grid container columnSpacing={2} spacing={5} direction="row" alignItems="center">
+                            <Grid item>
+                                <Badge badgeContent={markers.length} color="warning">
+                                    <ErrorIcon color="action" />
+                                </Badge>
+                            </Grid>
+                            <Grid item>Problems</Grid>
+                        </Grid>
+                    </Paper>
                     <div className="ProblemsContent">
                         {markers.map((marker) => (
                             <div className="Problem" onClick={() => selectMarker(marker)}>

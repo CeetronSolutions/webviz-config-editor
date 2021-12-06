@@ -1,9 +1,8 @@
 import React from "react";
 import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
-import { AppBar, Toolbar, Button, Tabs, Tab, Typography, IconButton } from "@mui/material";
-import { Edit, PlayArrow, Settings, Brightness4, Brightness7 } from "@mui/icons-material";
+import { Tabs, Tab, Paper } from "@mui/material";
+import { Edit, PlayArrow, Settings } from "@mui/icons-material";
 import { useTheme } from "@mui/material";
-import useSize from "@react-hook/size";
 import path from "path";
 
 import "./main-window.css";
@@ -14,30 +13,18 @@ import { LivePreview } from "../LivePreview/live-preview";
 import { Preferences } from "../Preferences/preferences";
 import { ResizablePanels } from "../ResizablePanels";
 
-import { Size } from "../../types/size";
 import { FilesStore } from "../Store";
 import { Play } from "../Play";
+import { ThemeSwitch } from "../ThemeSwitch";
 
 type MainWindowProps = {};
 
 export const MainWindow: React.FC<MainWindowProps> = (props) => {
-    const [tab, setTab] = React.useState<number>(0);
-    const [editorSize, setEditorSize] = React.useState<Size>({ width: 0, height: 0 });
     const theme = useTheme();
     const colorMode = React.useContext(ColorModeContext);
     const store = FilesStore.useStore();
 
     const mainWindowRef = React.useRef<HTMLDivElement | null>(null);
-    const appBarRef = React.useRef<HTMLDivElement | null>(null);
-    const [windowWidth, windowHeight] = useSize(mainWindowRef);
-    const [appBarWidth, appBarHeight] = useSize(appBarRef);
-
-    React.useEffect(() => {
-        setEditorSize({
-            width: windowWidth - 80,
-            height: windowHeight - appBarHeight,
-        });
-    }, [windowWidth, windowHeight, appBarHeight, appBarWidth]);
 
     React.useEffect(() => {
         const file = store.state.files.find((el) => el.uuid === store.state.activeFileUuid);
@@ -55,7 +42,7 @@ export const MainWindow: React.FC<MainWindowProps> = (props) => {
         <Router>
             <div className="MainWindow" ref={mainWindowRef}>
                 <div className="ContentWrapper">
-                    <div className="TabMenu">
+                    <Paper elevation={2} className="TabMenu" sx={{ borderRadius: 0 }}>
                         <Route
                             path="/"
                             render={(history) => (
@@ -84,11 +71,14 @@ export const MainWindow: React.FC<MainWindowProps> = (props) => {
                                 </Tabs>
                             )}
                         />
-                    </div>
+                        <div className="GlobalSettings">
+                            <ThemeSwitch />
+                        </div>
+                    </Paper>
                     <div className="Content">
                         <Switch>
                             <Route exact path="/">
-                                <ResizablePanels direction="horizontal">
+                                <ResizablePanels id="Editor-LivePreview" direction="horizontal">
                                     <Editor />
                                     <LivePreview />
                                 </ResizablePanels>

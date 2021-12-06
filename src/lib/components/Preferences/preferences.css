@@ -1,12 +1,10 @@
 .Preferences {
     padding: 16px;
-    background-color: rgb(32, 32, 32);
     width: 100%;
 }
 
 .Preferences__Category {
     margin-bottom: 16px;
-    color: rgb(238, 238, 238);
     font-size: 1.5rem;
 }
 
