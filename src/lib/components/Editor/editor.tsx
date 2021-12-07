@@ -7,7 +7,7 @@ import { ipcRenderer } from "electron";
 import * as path from "path";
 import { Grid, Paper } from "@mui/material";
 
-import { FilesStore } from "../Store";
+import { FilesStore, SettingsStore } from "../Store";
 
 import "./editor.css";
 
@@ -56,6 +56,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
     const monacoRef = React.useRef<typeof monaco | null>(null);
 
     const store = FilesStore.useStore();
+    const settingsStore = SettingsStore.useStore();
     const [totalWidth, totalHeight] = useSize(editorRef);
 
     const theme = useTheme();
@@ -85,6 +86,9 @@ export const Editor: React.FC<EditorProps> = (props) => {
                     source: FilesStore.UpdateSource.Editor,
                 },
             });
+            if (monacoEditorRef.current) {
+                console.log(monacoEditorRef.current.getModel()?.getLineDecorations(e.position.lineNumber) || "");
+            }
         }
     };
 
@@ -217,7 +221,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                 {
                     fileMatch: ["*"],
                     schema: jsonSchema,
-                    uri: "file:///home/ruben/.local/share/webviz/webviz_schema.json",
+                    uri: `file://${settingsStore.state.settings.find((el) => el.id === "schema")?.value || ""}`,
                 },
             ],
         });
@@ -234,6 +238,10 @@ export const Editor: React.FC<EditorProps> = (props) => {
             );
             monacoEditorRef.current.revealLinesInCenterIfOutsideViewport(marker.startLineNumber, marker.endLineNumber);
         }
+    };
+
+    const makeProblemKey = (marker: monaco.editor.IMarker): string => {
+        return `${marker.resource.toString()}-${marker.startLineNumber}-${marker.endLineNumber}`;
     };
 
     return (
@@ -281,8 +289,8 @@ export const Editor: React.FC<EditorProps> = (props) => {
                         onChange={handleEditorValueChange}
                         theme={theme.palette.mode === "dark" ? "vs-dark" : "vs"}
                         options={{ tabSize: 2, insertSpaces: true, quickSuggestions: { other: true, strings: true } }}
-                        width={totalWidth - 16}
-                        height={totalHeight - 65}
+                        width={totalWidth}
+                        height={totalHeight - 40}
                     />
                 </div>
                 <div
@@ -301,7 +309,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                     </Paper>
                     <div className="ProblemsContent">
                         {markers.map((marker) => (
-                            <div className="Problem" onClick={() => selectMarker(marker)}>
+                            <div className="Problem" onClick={() => selectMarker(marker)} key={makeProblemKey(marker)}>
                                 {marker.severity === monaco.MarkerSeverity.Error ? (
                                     <ErrorIcon color="error" fontSize="small" />
                                 ) : marker.severity === monaco.MarkerSeverity.Warning ? (

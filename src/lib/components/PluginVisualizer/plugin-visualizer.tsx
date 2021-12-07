@@ -4,6 +4,8 @@ import { monaco } from "react-monaco-editor";
 import { FilesStore } from "../Store";
 import { LayoutObject, PluginArgumentObject } from "../../utils/yaml-parser";
 
+import "./plugin-visualizer.css";
+
 export type PluginVisualizerType = {
     pluginData: LayoutObject;
 };
@@ -41,25 +43,19 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
         return (
             <>
                 <h3>{data.name}</h3>
-                <table>
-                    <tbody>
-                        {(data.children as PluginArgumentObject[]).map((child: PluginArgumentObject) => (
-                            <tr key={child.id}>
-                                <td>{child.name}</td>
-                                <td>{JSON.stringify(child.value)}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                Description
+                {(data.children as PluginArgumentObject[]).map((child: PluginArgumentObject) => (
+                    <>
+                        <h5>{child.name}</h5>
+                        {JSON.stringify(child.value)}
+                    </>
+                ))}
             </>
         );
     };
 
     return (
-        <div
-            className={`LivePreview__Plugin${selected ? " LivePreview__Plugin--selected" : ""}`}
-            onClick={selectPlugin}
-        >
+        <div className={`Plugin${selected ? " Plugin--selected" : ""}`} onClick={selectPlugin}>
             {renderPlugin(props.pluginData)}
         </div>
     );

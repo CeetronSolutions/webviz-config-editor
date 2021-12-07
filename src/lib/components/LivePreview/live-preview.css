@@ -4,6 +4,7 @@
     flex-direction: column;
     height: 100%;
     align-items: stretch;
+    overflow: auto;
 }
 
 .LivePreview__Title {
@@ -31,19 +32,4 @@
     display: block;
     margin: 16px;
     flex-grow: 4;
-}
-
-.LivePreview__Plugin {
-    background-color: #fefefe;
-    border-color: #ccc;
-    border-radius: 8px;
-    border-style: solid;
-    border-width: 1px;
-    padding: 16px;
-    margin: 8px;
-    display: block;
-}
-
-.LivePreview__Plugin--selected {
-    border-color: rgb(180, 0, 0);
 }

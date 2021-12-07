@@ -23,7 +23,7 @@ import { SettingsStore } from "../../Store";
 
 import "./preference-item.css";
 
-const { dialog } = require("@electron/remote");
+const { app, dialog } = require("@electron/remote");
 
 enum PreferenceItemState {
     VALIDATING = 0,
@@ -131,7 +131,7 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                 pythonPath: store.state.settings.find((el) => el.id === "python-interpreter")?.value.toString() || "",
             };
             PythonShell.run(
-                path.resolve("/home/ruben/repos/webviz/webviz-config-editor/", "python", "webviz_themes.py"),
+                path.resolve(app.getAppPath(), "python", "webviz_themes.py"),
                 options,
                 (err?: PythonShellError, output?: any[]) => {
                     if (output && output.length > 0 && "themes" in output[0]) {

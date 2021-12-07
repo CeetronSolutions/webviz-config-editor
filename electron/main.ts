@@ -190,10 +190,6 @@ function createMenu() {
                     },
                 },
                 {
-                    label: "New Window",
-                    accelerator: "CmdOrCtrl+N",
-                },
-                {
                     label: "Open File...",
                     accelerator: "CmdOrCtrl+O",
                     click() {
