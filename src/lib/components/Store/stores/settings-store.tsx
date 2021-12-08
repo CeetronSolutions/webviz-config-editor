@@ -7,6 +7,7 @@ import { createGenericContext } from "../../../utils/generic-context";
 import { NotificationType, useNotifications } from "../../Notifications";
 import fs from "fs";
 import { LogEntry, LogEntryType } from "../../../types/log";
+import { PluginParser } from "../../../utils/plugin-parser";
 
 type ActionMap<
     M extends {
@@ -53,6 +54,7 @@ export enum StoreActions {
 
 export type StoreState = {
     settings: Setting[];
+    pluginParser: PluginParser;
     log: LogEntry[];
 };
 
@@ -69,14 +71,24 @@ type Payload = {
 export type Actions = ActionMap<Payload>[keyof ActionMap<Payload>];
 const initialState: StoreState = {
     settings: compressSettings(Settings),
+    pluginParser: new PluginParser(),
     log: [],
 };
 
 export const StoreReducerInit = (initialState: StoreState): StoreState => {
     const settings = readSettings();
+    const pluginParser = new PluginParser();
+    const jsonSchemaPath = settings.find((el) => el.id === "schema")?.value;
+    if (jsonSchemaPath && typeof jsonSchemaPath === "string") {
+        try {
+            const fileContent = fs.readFileSync(jsonSchemaPath).toString();
+            pluginParser.parse(JSON.parse(fileContent));
+        } catch (e) {}
+    }
     if (settings.length > 0) {
         return {
             settings: settings,
+            pluginParser: pluginParser,
             log: [],
         };
     }
@@ -96,6 +108,17 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
                 id: setting.id,
                 value: setting.id === action.payload.id ? action.payload.value : setting.value,
             }));
+            if (action.payload.id === "schema") {
+                const jsonSchemaPath = action.payload.value;
+                if (jsonSchemaPath && typeof jsonSchemaPath === "string") {
+                    try {
+                        const fileContent = fs.readFileSync(jsonSchemaPath).toString();
+                        state.pluginParser.parse(JSON.parse(fileContent));
+                    } catch (e) {
+                        console.log(e);
+                    }
+                }
+            }
             writeSettings(newSettings);
             return {
                 ...state,

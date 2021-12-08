@@ -83,6 +83,7 @@ type Payload = {
     };
     [StoreActions.UpdateCurrentContent]: {
         content: string;
+        source: UpdateSource;
     };
     [StoreActions.UpdateSelection]: {
         selection: Selection;
@@ -354,7 +355,10 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
             return {
                 ...state,
                 currentEditorContent: action.payload.content,
-                currentYamlObjects: state.yamlParser.getObjects(),
+                currentYamlObjects:
+                    JSON.stringify(state.yamlParser.getObjects()) !== JSON.stringify(state.currentYamlObjects)
+                        ? state.yamlParser.getObjects()
+                        : state.currentYamlObjects,
                 files: state.files.map((el) =>
                     el.uuid === state.activeFileUuid ? { ...el, unsavedChanges: unsavedChanges } : el
                 ),

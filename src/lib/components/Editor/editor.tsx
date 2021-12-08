@@ -158,7 +158,10 @@ export const Editor: React.FC<EditorProps> = (props) => {
     };
 
     const handleEditorValueChange = (value: string) => {
-        store.dispatch({ type: FilesStore.StoreActions.UpdateCurrentContent, payload: { content: value } });
+        store.dispatch({
+            type: FilesStore.StoreActions.UpdateCurrentContent,
+            payload: { content: value, source: FilesStore.UpdateSource.Editor },
+        });
     };
 
     const handleMarkersChange = () => {
@@ -186,6 +189,15 @@ export const Editor: React.FC<EditorProps> = (props) => {
         }
         monacoEditorRef.current.updateOptions({ fontSize: 12 * fontSize });
     }, [fontSize, monacoEditorRef]);
+
+    React.useEffect(() => {
+        if (store.state.updateSource === FilesStore.UpdateSource.Preview && monacoEditorRef.current) {
+            const model = monacoEditorRef.current.getModel();
+            if (model) {
+                model.setValue(store.state.currentEditorContent);
+            }
+        }
+    }, [store.state.currentEditorContent]);
 
     React.useEffect(() => {
         const file = store.state.files.find((el) => el.uuid === store.state.activeFileUuid);

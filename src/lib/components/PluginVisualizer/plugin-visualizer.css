@@ -9,6 +9,11 @@
     display: block;
 }
 
+.PluginDescription {
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
 .Plugin:hover {
     outline-style: solid;
     outline-width: 2px;
