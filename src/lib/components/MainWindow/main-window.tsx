@@ -40,7 +40,11 @@ export const MainWindow: React.FC<MainWindowProps> = (props) => {
 
     return (
         <Router>
-            <div className="MainWindow" ref={mainWindowRef}>
+            <div
+                className="MainWindow"
+                ref={mainWindowRef}
+                style={{ backgroundColor: theme.palette.background.default }}
+            >
                 <div className="ContentWrapper">
                     <Paper elevation={2} className="TabMenu" sx={{ borderRadius: 0 }}>
                         <Route

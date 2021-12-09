@@ -8,7 +8,7 @@ import {
 } from "@webviz/core-components/dist/components/Menu/types/navigation";
 
 import { MenuWrapper } from "../MenuWrapper";
-import { FilesStore } from "../Store";
+import { FilesStore, SettingsStore } from "../Store";
 
 import "./live-preview.css";
 import { ErrorBoundary } from "../ErrorBoundary";
@@ -29,23 +29,27 @@ export const LivePreview: React.FC<LivePreviewProps> = (props) => {
     const [navigationItems, setNavigationItems] = React.useState<PropertyNavigationType>([]);
     const [title, setTitle] = React.useState<string>("");
     const [currentPageContent, setCurrentPageContent] = React.useState<LayoutObject[]>([]);
-    const [currentPage, setCurrentPage] = React.useState<MenuReturnProps>({
-        url: "",
-    });
     const store = FilesStore.useStore();
 
     React.useEffect(() => {
+        if (store.state.updateSource !== FilesStore.UpdateSource.Editor) {
+            return;
+        }
         if (store.state.currentYamlObjects.length === 0) {
             setNavigationItems([]);
             setCurrentPageContent([]);
             setTitle("");
             return;
         }
+
         setTitle(store.state.yamlParser.getTitle());
         setNavigationItems(store.state.yamlParser.getNavigationItems());
-    }, [store.state.currentYamlObjects]);
+    }, [store.state.currentYamlObjects, store.state.updateSource]);
 
     React.useEffect(() => {
+        if (store.state.updateSource === FilesStore.UpdateSource.Preview) {
+            return;
+        }
         const object = store.state.yamlParser.getObjectById(store.state.currentPageId);
         if (object) {
             store.dispatch({
@@ -57,7 +61,7 @@ export const LivePreview: React.FC<LivePreviewProps> = (props) => {
             });
         }
         setCurrentPageContent((object?.children as LayoutObject[]) || []);
-    }, [store.state.currentPageId, store.state.currentYamlObjects]);
+    }, [store.state.currentPageId, store.state.updateSource]);
 
     return (
         <div className="LivePreview">

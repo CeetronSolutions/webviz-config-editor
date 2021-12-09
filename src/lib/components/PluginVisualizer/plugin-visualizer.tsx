@@ -6,7 +6,7 @@ import { FilesStore, SettingsStore } from "../Store";
 import { LayoutObject, PluginArgumentObject } from "../../utils/yaml-parser";
 
 import "./plugin-visualizer.css";
-import { Switch, TextField } from "@mui/material";
+import { Paper, Switch, TextField, Typography } from "@mui/material";
 
 export type PluginVisualizerType = {
     pluginData: LayoutObject;
@@ -43,7 +43,7 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
         while (line.charAt(indent) === " ") {
             indent++;
         }
-        return line.substr(0, indent);
+        return line.substring(0, indent);
     };
 
     const handleValueChanged = (
@@ -71,8 +71,28 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
             );
         }
         store.dispatch({
-            type: FilesStore.StoreActions.UpdateCurrentContent,
-            payload: { content: contentLines.join("\n"), source: FilesStore.UpdateSource.Preview },
+            type: FilesStore.StoreActions.UpdateCurrentContentAndSetSelection,
+            payload: {
+                content: contentLines.join("\n"),
+                source: FilesStore.UpdateSource.Preview,
+                selection: new monaco.Selection(data.startLineNumber, 0, data.endLineNumber, 0),
+            },
+        });
+    };
+
+    const handleInputFocus = (
+        e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement, Element>,
+        argument: PluginArgumentObject | undefined
+    ) => {
+        if (!argument) {
+            return;
+        }
+        store.dispatch({
+            type: FilesStore.StoreActions.UpdateSelection,
+            payload: {
+                selection: new monaco.Selection(argument.startLineNumber, 0, argument.endLineNumber, 0),
+                source: FilesStore.UpdateSource.Preview,
+            },
         });
     };
 
@@ -92,14 +112,16 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
                         defaultValue={value}
                         required={required}
                         onChange={(e) => handleValueChanged(data, argument, key, e.target.value)}
+                        onFocus={(e) => handleInputFocus(e, argument)}
+                        onClick={(e) => e.stopPropagation()}
                     />
                 );
             case "boolean":
                 return (
                     <Switch
-                        defaultChecked={value}
+                        defaultChecked={value === "true"}
                         required={required}
-                        onChange={(e) => handleValueChanged(data, argument, key, e.target.value)}
+                        onChange={(e) => handleValueChanged(data, argument, key, e.target.checked)}
                     />
                 );
             case "integer":
@@ -109,6 +131,8 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
                         inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
                         type="number"
                         defaultValue={value}
+                        onFocus={(e) => handleInputFocus(e, argument)}
+                        onClick={(e) => e.stopPropagation()}
                     />
                 );
             case "array":
@@ -128,8 +152,13 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
     };
 
     const renderPlugin = (data: LayoutObject): React.ReactNode => {
-        if (typeof data === "string") {
-            return data;
+        if (data.type === "PLAINTEXT") {
+            return (
+                <>
+                    <h3>Text</h3>
+                    <TextField multiline defaultValue={data.name} />
+                </>
+            );
         }
 
         if (data.name) {
@@ -144,11 +173,14 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
                     {plugin.properties &&
                         Object.entries(plugin.properties).map(([key, value], index) => (
                             <>
-                                <h4>
+                                <h4 style={{ whiteSpace: "nowrap" }}>
                                     {key}
                                     {plugin.requiredProperties !== undefined &&
-                                        plugin.requiredProperties.includes(key) &&
-                                        "*"}
+                                        plugin.requiredProperties.includes(key) && (
+                                            <Typography color="error" variant="inherit">
+                                                *
+                                            </Typography>
+                                        )}
                                 </h4>
                                 {"type" in value &&
                                     makeInput(
@@ -170,8 +202,8 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
     };
 
     return (
-        <div className={`Plugin${selected ? " Plugin--selected" : ""}`} onClick={selectPlugin}>
+        <Paper className={`Plugin${selected ? " Plugin--selected" : ""}`} onClick={selectPlugin}>
             {renderPlugin(props.pluginData)}
-        </div>
+        </Paper>
     );
 };

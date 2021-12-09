@@ -50,6 +50,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
     const [selection, setSelection] = React.useState<monaco.ISelection | null>(null);
     const [lineDecorations, setLineDecorations] = React.useState<string[]>([]);
     const [markers, setMarkers] = React.useState<monaco.editor.IMarker[]>([]);
+    const [userChanges, setUserChanges] = React.useState<boolean>(true);
 
     const monacoEditorRef = React.useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
     const editorRef = React.useRef<HTMLDivElement | null>(null);
@@ -59,9 +60,19 @@ export const Editor: React.FC<EditorProps> = (props) => {
     const settingsStore = SettingsStore.useStore();
     const [totalWidth, totalHeight] = useSize(editorRef);
 
+    const timeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const theme = useTheme();
 
     const fontSizes = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2];
+
+    React.useEffect(() => {
+        return () => {
+            if (timeout.current) {
+                clearTimeout(timeout.current);
+            }
+        };
+    });
 
     const handleCursorPositionChange = (e: monaco.editor.ICursorPositionChangedEvent): void => {
         if (
@@ -74,6 +85,9 @@ export const Editor: React.FC<EditorProps> = (props) => {
             setSelection(
                 new monaco.Selection(e.position.lineNumber, e.position.column, e.position.lineNumber, e.position.column)
             );
+            if (!userChanges) {
+                return;
+            }
             store.dispatch({
                 type: FilesStore.StoreActions.UpdateSelection,
                 payload: {
@@ -101,6 +115,9 @@ export const Editor: React.FC<EditorProps> = (props) => {
             selection.positionColumn !== e.selection.positionColumn
         ) {
             setSelection(e.selection);
+            if (!userChanges) {
+                return;
+            }
             store.dispatch({
                 type: FilesStore.StoreActions.UpdateSelection,
                 payload: {
@@ -158,6 +175,9 @@ export const Editor: React.FC<EditorProps> = (props) => {
     };
 
     const handleEditorValueChange = (value: string) => {
+        if (!userChanges) {
+            return;
+        }
         store.dispatch({
             type: FilesStore.StoreActions.UpdateCurrentContent,
             payload: { content: value, source: FilesStore.UpdateSource.Editor },
@@ -192,6 +212,11 @@ export const Editor: React.FC<EditorProps> = (props) => {
 
     React.useEffect(() => {
         if (store.state.updateSource === FilesStore.UpdateSource.Preview && monacoEditorRef.current) {
+            setUserChanges(false);
+            if (timeout.current) {
+                clearTimeout(timeout.current);
+            }
+            timeout.current = setTimeout(() => setUserChanges(true), 5000);
             const model = monacoEditorRef.current.getModel();
             if (model) {
                 model.setValue(store.state.currentEditorContent);

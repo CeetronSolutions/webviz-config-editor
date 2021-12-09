@@ -122,14 +122,21 @@ type IdLinesMapType = {
     object: YamlObject | LayoutObject | OptionsObject;
 };
 
+type RegisteredElements = {
+    indent: number;
+    numberElements: number;
+};
+
 export class YamlParser {
     private objects: YamlObject[];
     private parsedString: string;
     private idObjectsMap: IdLinesMapType[];
+    private registeredElements: RegisteredElements[];
     constructor() {
         this.objects = [];
         this.parsedString = "";
         this.idObjectsMap = [];
+        this.registeredElements = [];
     }
 
     getLineNumber(offset: number): number {
@@ -159,6 +166,22 @@ export class YamlParser {
             break;
         }
         return this.getLineNumber(object.offset);
+    }
+
+    private makeId(indent: number): string {
+        const object = this.registeredElements.find((el) => el.indent === indent);
+        let number = 0;
+        if (object) {
+            number = object.numberElements;
+            object.numberElements += 1;
+        } else {
+            this.registeredElements.push({
+                indent: indent,
+                numberElements: 1,
+            });
+            number = 0;
+        }
+        return `${indent}-${number}`;
     }
 
     private reset() {
@@ -270,21 +293,24 @@ export class YamlParser {
         item: DefinedBlockMapItem | yaml.CST.FlowScalar | DefinedBlockMapItem[]
     ): LayoutObject;
     private registerObject(object: any, item: any) {
-        const id = uuid();
-
         let startLineNumber = 0;
         let endLineNumber = 0;
+        let indent = 0;
 
         if (item.constructor === Array) {
             startLineNumber = this.getLineNumber(item[0].key.offset);
             endLineNumber = this.getEndLineNumber(item[item.length - 1].value);
+            indent = item[0].key.indent;
         } else if ("key" in item) {
             startLineNumber = this.getLineNumber(item.key.offset);
             endLineNumber = this.getEndLineNumber(item.value);
+            indent = item.key.indent;
         } else if ("offset" in item) {
             startLineNumber = this.getLineNumber(item.offset);
             endLineNumber = this.getEndLineNumber(item);
+            indent = item.indent;
         }
+        const id = this.makeId(item.indent);
         const newObject = { ...object, id: id, startLineNumber: startLineNumber, endLineNumber: endLineNumber };
         this.idObjectsMap.push({
             id: id,
@@ -443,7 +469,7 @@ export class YamlParser {
             if (option.key && option.value && option.key.type === "scalar") {
                 if (option.value.type === "scalar") {
                     optionObjects.push({
-                        id: uuid(),
+                        id: this.makeId(option.key.indent),
                         name: option.key.source,
                         value: option.value.source,
                         startLineNumber: this.getLineNumber(option.key.offset),
@@ -454,7 +480,7 @@ export class YamlParser {
                         .filter((el: BlockSequenceItem) => el.value && el.value.type === "scalar")
                         .map((el) => (el.value as yaml.CST.FlowScalar).source);
                     optionObjects.push({
-                        id: uuid(),
+                        id: this.makeId(option.key.indent),
                         name: option.key.source,
                         value: valueList,
                         startLineNumber: this.getLineNumber(option.key.offset),
@@ -462,7 +488,7 @@ export class YamlParser {
                     });
                 } else if (option.value.type === "block-map") {
                     optionObjects.push({
-                        id: uuid(),
+                        id: this.makeId(option.key.indent),
                         name: option.key.source,
                         value: this.parsePluginOptions(option.value.items),
                         startLineNumber: this.getLineNumber(option.key.offset),
@@ -622,7 +648,8 @@ export class YamlParser {
     }
 
     private parseNavigationItems(
-        items: LayoutObject[]
+        items: LayoutObject[],
+        currentId: number
     ): (PropertyGroupType | PropertyPageType | PropertySectionType)[] {
         const navigationItems: (PropertyGroupType | PropertyPageType | PropertySectionType)[] = [];
         items.forEach((item) => {
@@ -631,7 +658,7 @@ export class YamlParser {
                     type: "section",
                     title: item.name || "",
                     icon: item.icon,
-                    content: this.parseNavigationItems(item.children as LayoutObject[]) as (
+                    content: this.parseNavigationItems(item.children as LayoutObject[], currentId) as (
                         | PropertyGroupType
                         | PropertyPageType
                     )[],
@@ -641,13 +668,13 @@ export class YamlParser {
                     type: "group",
                     title: item.name || "",
                     icon: item.icon,
-                    content: this.parseNavigationItems(item.children as LayoutObject[]) as (
+                    content: this.parseNavigationItems(item.children as LayoutObject[], currentId) as (
                         | PropertyGroupType
                         | PropertyPageType
                     )[],
                 });
             } else if (item.type === YamlLayoutObjectType.Page) {
-                const id = uuid();
+                const id = `page-${currentId++}`;
                 navigationItems.push({
                     type: "page",
                     title: item.name || "",
@@ -661,8 +688,9 @@ export class YamlParser {
 
     getNavigationItems(): PropertyNavigationType {
         const layout = this.objects.find((el) => el.type === YamlObjectType.Layout);
+        const currentId = 0;
         if (layout) {
-            return this.parseNavigationItems(layout.value as LayoutObject[]) as PropertyNavigationType;
+            return this.parseNavigationItems(layout.value as LayoutObject[], currentId) as PropertyNavigationType;
         }
         return [];
     }
