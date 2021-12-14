@@ -5,59 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Chrome",
-            "request": "launch",
-            "type": "pwa-chrome",
-            "url": "http://localhost:3000",
-            "webRoot": "${workspaceFolder}"
-        },
-        {
-            "name": "Attach to Chrome",
-            "port": 3000,
-            "request": "attach",
-            "type": "pwa-chrome",
-            "webRoot": "${workspaceFolder}"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Debug Main Process",
-            "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron",
-            "program": "${workspaceRoot}/build/electron/index.js",
-            "runtimeArgs": [
-                ".",
-                // this args for attaching render process
-                "--remote-debugging-port=3000"
-            ],
-            "windows": {
-                "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron.cmd"
-            },
-            "protocol": "legacy"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Launch Webpack",
-            "program": "${workspaceFolder}/node_modules/webpack/bin/webpack.js"
-        },
-        {
-            "name": "Debug Main Process",
-            "type": "node",
-            "request": "launch",
-            "cwd": "${workspaceFolder}",
-            "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
-            "windows": {
-                "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
-            },
-            "args": ["."],
-            "outputCapture": "std"
-        },
-        {
             "type": "node",
             "request": "launch",
             "name": "Electron: Main",
             "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
-            "runtimeArgs": ["--remote-debugging-port=3000", "."],
+            "runtimeArgs": ["--remote-debugging-port=9223", "."],
             "windows": {
                 "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
             }
@@ -66,8 +18,8 @@
             "name": "Electron: Renderer",
             "type": "chrome",
             "request": "attach",
-            "port": 3000,
-            "webRoot": "${workspaceFolder}",
+            "port": 9223,
+            "webRoot": "${workspaceRoot}",
             "timeout": 30000
         }
     ],

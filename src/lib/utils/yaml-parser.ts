@@ -12,6 +12,7 @@ type Unpacked<T> = T extends (infer U)[] ? U : T;
 
 export enum YamlObjectType {
     Title = "TITLE",
+    //SharedSettings
     Options = "OPTIONS",
     Layout = "LAYOUT",
 }

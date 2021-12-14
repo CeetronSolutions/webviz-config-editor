@@ -1,7 +1,7 @@
 import React from "react";
 import MonacoEditor, { monaco, EditorDidMount, EditorWillMount } from "react-monaco-editor";
 import useSize from "@react-hook/size";
-import { Environment } from "monaco-editor/esm/vs/editor/editor.api";
+import { editor, Environment } from "monaco-editor/esm/vs/editor/editor.api";
 import { setDiagnosticsOptions } from "monaco-yaml";
 import { ipcRenderer } from "electron";
 import * as path from "path";
@@ -50,7 +50,6 @@ export const Editor: React.FC<EditorProps> = (props) => {
     const [selection, setSelection] = React.useState<monaco.ISelection | null>(null);
     const [lineDecorations, setLineDecorations] = React.useState<string[]>([]);
     const [markers, setMarkers] = React.useState<monaco.editor.IMarker[]>([]);
-    const [userChanges, setUserChanges] = React.useState<boolean>(true);
 
     const monacoEditorRef = React.useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
     const editorRef = React.useRef<HTMLDivElement | null>(null);
@@ -85,7 +84,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
             setSelection(
                 new monaco.Selection(e.position.lineNumber, e.position.column, e.position.lineNumber, e.position.column)
             );
-            if (!userChanges) {
+            if (e.reason === monaco.editor.CursorChangeReason.ContentFlush) {
                 return;
             }
             store.dispatch({
@@ -100,9 +99,6 @@ export const Editor: React.FC<EditorProps> = (props) => {
                     source: FilesStore.UpdateSource.Editor,
                 },
             });
-            if (monacoEditorRef.current) {
-                console.log(monacoEditorRef.current.getModel()?.getLineDecorations(e.position.lineNumber) || "");
-            }
         }
     };
 
@@ -115,7 +111,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
             selection.positionColumn !== e.selection.positionColumn
         ) {
             setSelection(e.selection);
-            if (!userChanges) {
+            if (e.reason === monaco.editor.CursorChangeReason.ContentFlush) {
                 return;
             }
             store.dispatch({
@@ -139,6 +135,9 @@ export const Editor: React.FC<EditorProps> = (props) => {
     );
 
     React.useEffect(() => {
+        if (store.state.updateSource === FilesStore.UpdateSource.Plugin) {
+            return;
+        }
         if (monacoEditorRef.current && selection && store.state.selectedYamlObject) {
             updateLineDecorations([
                 {
@@ -154,12 +153,10 @@ export const Editor: React.FC<EditorProps> = (props) => {
                     },
                 },
             ]);
-            if (store.state.updateSource !== FilesStore.UpdateSource.Editor) {
-                monacoEditorRef.current.revealLinesInCenterIfOutsideViewport(
-                    store.state.selectedYamlObject.startLineNumber,
-                    store.state.selectedYamlObject.endLineNumber
-                );
-            }
+            monacoEditorRef.current.revealLinesInCenterIfOutsideViewport(
+                store.state.selectedYamlObject.startLineNumber,
+                store.state.selectedYamlObject.endLineNumber
+            );
         }
     }, [store.state.selectedYamlObject, store.state.updateSource]);
 
@@ -174,14 +171,17 @@ export const Editor: React.FC<EditorProps> = (props) => {
         handleMarkersChange();
     };
 
-    const handleEditorValueChange = (value: string) => {
-        if (!userChanges) {
+    const handleEditorValueChange = (e: monaco.editor.IModelContentChangedEvent) => {
+        if (e.isFlush) {
             return;
         }
-        store.dispatch({
-            type: FilesStore.StoreActions.UpdateCurrentContent,
-            payload: { content: value, source: FilesStore.UpdateSource.Editor },
-        });
+        const model = monacoEditorRef.current?.getModel();
+        if (model) {
+            store.dispatch({
+                type: FilesStore.StoreActions.UpdateCurrentContent,
+                payload: { content: model.getValue(), source: FilesStore.UpdateSource.Editor },
+            });
+        }
     };
 
     const handleMarkersChange = () => {
@@ -198,6 +198,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
     const handleEditorDidMount: EditorDidMount = (editor, monaco) => {
         monacoEditorRef.current = editor;
         monacoRef.current = monaco;
+        monacoEditorRef.current.onDidChangeModelContent(handleEditorValueChange);
         monacoEditorRef.current.onDidChangeCursorPosition(handleCursorPositionChange);
         monacoEditorRef.current.onDidChangeCursorSelection(handleCursorSelectionChange);
         monacoRef.current.editor.onDidChangeMarkers(handleMarkersChange);
@@ -211,12 +212,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
     }, [fontSize, monacoEditorRef]);
 
     React.useEffect(() => {
-        if (store.state.updateSource === FilesStore.UpdateSource.Preview && monacoEditorRef.current) {
-            setUserChanges(false);
-            if (timeout.current) {
-                clearTimeout(timeout.current);
-            }
-            timeout.current = setTimeout(() => setUserChanges(true), 5000);
+        if (store.state.updateSource === FilesStore.UpdateSource.Plugin && monacoEditorRef.current) {
             const model = monacoEditorRef.current.getModel();
             if (model) {
                 model.setValue(store.state.currentEditorContent);
@@ -277,7 +273,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
         }
     };
 
-    const makeProblemKey = (marker: monaco.editor.IMarker): string => {
+    const makeIssueKey = (marker: monaco.editor.IMarker): string => {
         return `${marker.resource.toString()}-${marker.startLineNumber}-${marker.endLineNumber}`;
     };
 
@@ -314,7 +310,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                     ))}
                 </ul>
             </div>
-            <ResizablePanels direction="vertical" id="Editor-Problems">
+            <ResizablePanels direction="vertical" id="Editor-Issues">
                 <div className="Editor" ref={editorRef}>
                     <FileTabs onFileChange={handleFileChange} />
                     <MonacoEditor
@@ -323,7 +319,6 @@ export const Editor: React.FC<EditorProps> = (props) => {
                         className="YamlEditor"
                         editorDidMount={handleEditorDidMount}
                         editorWillMount={handleEditorWillMount}
-                        onChange={handleEditorValueChange}
                         theme={theme.palette.mode === "dark" ? "vs-dark" : "vs"}
                         options={{ tabSize: 2, insertSpaces: true, quickSuggestions: { other: true, strings: true } }}
                         width={totalWidth}
@@ -331,7 +326,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                     />
                 </div>
                 <div
-                    className="Problems"
+                    className="Issues"
                     style={{ backgroundColor: theme.palette.background.paper, color: theme.palette.text.primary }}
                 >
                     <Paper elevation={1} style={{ padding: 16 }} sx={{ borderRadius: 0 }}>
@@ -341,12 +336,12 @@ export const Editor: React.FC<EditorProps> = (props) => {
                                     <ErrorIcon color="action" />
                                 </Badge>
                             </Grid>
-                            <Grid item>Problems</Grid>
+                            <Grid item>Issues</Grid>
                         </Grid>
                     </Paper>
-                    <div className="ProblemsContent">
+                    <div className="IssuesContent">
                         {markers.map((marker) => (
-                            <div className="Problem" onClick={() => selectMarker(marker)} key={makeProblemKey(marker)}>
+                            <div className="Issue" onClick={() => selectMarker(marker)} key={makeIssueKey(marker)}>
                                 {marker.severity === monaco.MarkerSeverity.Error ? (
                                     <ErrorIcon color="error" fontSize="small" />
                                 ) : marker.severity === monaco.MarkerSeverity.Warning ? (
@@ -357,7 +352,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                                     <AssistantPhoto color="primary" fontSize="small" />
                                 )}{" "}
                                 {marker.message}
-                                <span className="ProblemPosition">
+                                <span className="IssuePosition">
                                     [{marker.startLineNumber}, {marker.startColumn}]
                                 </span>
                             </div>

@@ -3,11 +3,14 @@ import { Menu } from "@webviz/core-components";
 import { MenuProps } from "@webviz/core-components/dist/components/Menu/Menu";
 
 import "./menu-wrapper.css";
+import { useTheme } from "@mui/material";
 
 export const MenuWrapper: React.FC<MenuProps> = (props) => {
     const menuWrapperRef = React.useRef<HTMLDivElement | null>(null);
     const [visible, setVisible] = React.useState<boolean>(false);
     const [width, setWidth] = React.useState<number>(0);
+
+    const theme = useTheme();
 
     const [resizeOberserver, setResizeObserver] = React.useState<ResizeObserver | undefined>();
 
@@ -60,6 +63,7 @@ export const MenuWrapper: React.FC<MenuProps> = (props) => {
                     setWidth(menu.getBoundingClientRect().width);
                     const bodyMargins = { left: 0, top: 0, right: 0, bottom: 0 };
                     menu.style.position = "absolute";
+                    menu.style.backgroundColor = theme.palette.background.paper;
                     menu.style.height = menuWrapperRef.current.getBoundingClientRect().height + "px";
                     document.body.style.marginLeft = bodyMargins.left + "px";
                     document.body.style.marginTop = bodyMargins.top + "px";
@@ -76,6 +80,21 @@ export const MenuWrapper: React.FC<MenuProps> = (props) => {
             }
         }, 0);
     }, [menuWrapperRef]);
+
+    React.useEffect(() => {
+        if (menuWrapperRef.current) {
+            const menu = menuWrapperRef.current.getElementsByClassName("Menu__MenuDrawer")[0] as
+                | HTMLElement
+                | undefined;
+            if (menu) {
+                menu.style.backgroundColor = theme.palette.background.paper;
+                menu.style.color = theme.palette.getContrastText(theme.palette.background.paper);
+                for (const link of menu.getElementsByTagName("a")) {
+                    link.style.color = theme.palette.getContrastText(theme.palette.background.paper);
+                }
+            }
+        }
+    }, [theme.palette.mode]);
 
     return (
         <div

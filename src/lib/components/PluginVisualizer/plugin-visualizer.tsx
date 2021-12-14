@@ -6,16 +6,47 @@ import { FilesStore, SettingsStore } from "../Store";
 import { LayoutObject, PluginArgumentObject } from "../../utils/yaml-parser";
 
 import "./plugin-visualizer.css";
-import { Paper, Switch, TextField, Typography } from "@mui/material";
+import {
+    Avatar,
+    Button,
+    Collapse,
+    List,
+    ListItem,
+    ListItemAvatar,
+    ListItemText,
+    Paper,
+    Switch,
+    TextField,
+} from "@mui/material";
+import { useTheme } from "@mui/material";
+import {
+    Settings,
+    TextFields,
+    ToggleOn,
+    Tag,
+    Person,
+    DataObject,
+    Numbers,
+    Abc,
+    DataArray,
+    ExpandLess,
+    ExpandMore,
+} from "@mui/icons-material";
+import { TagsInput } from "react-tag-input-component";
+import { Plugin } from "../../utils/plugin-parser";
+import { PreviewMode } from "../LivePreview/live-preview";
 
 export type PluginVisualizerType = {
     pluginData: LayoutObject;
+    mode: PreviewMode;
 };
 
 export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
     const [selected, setSelected] = React.useState<boolean>(false);
     const store = FilesStore.useStore();
     const settingsStore = SettingsStore.useStore();
+    const theme = useTheme();
+    const [openStates, setOpenStates] = React.useState<{ [key: string]: boolean }>({});
 
     React.useEffect(() => {
         if (
@@ -33,7 +64,7 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
             type: FilesStore.StoreActions.UpdateSelection,
             payload: {
                 selection: new monaco.Selection(props.pluginData.startLineNumber, 0, props.pluginData.endLineNumber, 0),
-                source: FilesStore.UpdateSource.Preview,
+                source: FilesStore.UpdateSource.Plugin,
             },
         });
     };
@@ -58,23 +89,31 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
         let contentLines = store.state.currentEditorContent.split("\n");
         if (argument) {
             contentLines[argument.startLineNumber - 1] = contentLines[argument.startLineNumber - 1].replace(
-                `${argument.name}: ${argument.value}`,
+                new RegExp(`${argument.name}: [^\n]*`),
                 `${argument.name}: ${newValue}`
             );
         } else {
+            const lastChild = data.children[data.children.length - 1];
             contentLines.splice(
-                data.children[data.children.length - 1].endLineNumber,
+                lastChild.endLineNumber,
                 0,
-                `${getIndent(
-                    contentLines[data.children[data.children.length - 1].endLineNumber - 1]
-                )}${key}: ${newValue}`
+                `${getIndent(contentLines[lastChild.endLineNumber - 1])}${key}: ${newValue}`
             );
+            const lastIds = lastChild.id.split("-");
+            const object: PluginArgumentObject = {
+                id: `${lastIds[0]}-${parseInt(lastIds[1]) + 1}`,
+                startLineNumber: lastChild.startLineNumber + 1,
+                endLineNumber: lastChild.startLineNumber + 2,
+                name: key,
+                value: newValue,
+            };
+            (data.children as PluginArgumentObject[]).push(object);
         }
         store.dispatch({
             type: FilesStore.StoreActions.UpdateCurrentContentAndSetSelection,
             payload: {
                 content: contentLines.join("\n"),
-                source: FilesStore.UpdateSource.Preview,
+                source: FilesStore.UpdateSource.Plugin,
                 selection: new monaco.Selection(data.startLineNumber, 0, data.endLineNumber, 0),
             },
         });
@@ -91,7 +130,7 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
             type: FilesStore.StoreActions.UpdateSelection,
             payload: {
                 selection: new monaco.Selection(argument.startLineNumber, 0, argument.endLineNumber, 0),
-                source: FilesStore.UpdateSource.Preview,
+                source: FilesStore.UpdateSource.Plugin,
             },
         });
     };
@@ -119,9 +158,9 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
             case "boolean":
                 return (
                     <Switch
-                        defaultChecked={value === "true"}
+                        defaultChecked={value === "True"}
                         required={required}
-                        onChange={(e) => handleValueChanged(data, argument, key, e.target.checked)}
+                        onChange={(e) => handleValueChanged(data, argument, key, e.target.checked ? "True" : "False")}
                     />
                 );
             case "integer":
@@ -136,17 +175,132 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
                     />
                 );
             case "array":
+                return <TagsInput value={[]} name={key} placeHolder={key} />;
+            case "object":
                 return (
-                    <ReactTags
-                        tags={value}
-                        handleAddition={() => {
-                            return;
+                    <Button
+                        onClick={() => {
+                            const newOpenStates = openStates;
+                            newOpenStates[key] = openStates[key] ? false : true;
+                            setOpenStates(newOpenStates);
                         }}
-                        handleDelete={() => {
-                            return;
-                        }}
-                    />
+                    >
+                        {openStates[key] ? <ExpandLess /> : <ExpandMore />}
+                    </Button>
                 );
+        }
+        return <></>;
+    };
+
+    const makeView = (
+        data: LayoutObject,
+        argument: PluginArgumentObject | undefined,
+        key: string,
+        type: string,
+        required: boolean,
+        value?: any,
+        properties?: any
+    ): React.ReactNode => {
+        switch (type) {
+            case "string":
+            case "boolean":
+            case "integer":
+                return value;
+            case "array":
+                return JSON.stringify(value);
+            case "list":
+                return JSON.stringify(value);
+            case "object":
+                return (
+                    <Button
+                        onClick={() => {
+                            const newOpenStates = openStates;
+                            newOpenStates[key] = openStates[key] ? false : true;
+                            setOpenStates(newOpenStates);
+                        }}
+                    >
+                        {openStates[key] ? <ExpandLess /> : <ExpandMore />}
+                    </Button>
+                );
+        }
+        return <></>;
+    };
+
+    const makeIcon = (type: string, name: string): React.ReactNode => {
+        switch (type) {
+            case "string":
+                return <Abc />;
+            case "boolean":
+                return <ToggleOn />;
+            case "integer":
+                return <Numbers />;
+            case "list":
+                return <DataArray />;
+            case "object":
+                if (name === "contact_person") {
+                    return <Person />;
+                } else {
+                    return <DataObject />;
+                }
+        }
+    };
+
+    const makeArgument = (data: LayoutObject, key: string, value: any, plugin: Plugin) => {
+        if (
+            props.mode === PreviewMode.Edit ||
+            (data.children as PluginArgumentObject[]).find((el) => el.name === key)?.value !== undefined
+        ) {
+            return (
+                <>
+                    <ListItem
+                        secondaryAction={
+                            props.mode === PreviewMode.Edit
+                                ? makeInput(
+                                      data,
+                                      (data.children as PluginArgumentObject[]).find((el) => el.name === key),
+                                      key,
+                                      value.type,
+                                      plugin.requiredProperties !== undefined &&
+                                          plugin.requiredProperties.includes(key),
+                                      (data.children as PluginArgumentObject[]).find((el) => el.name === key)?.value,
+                                      value["properties"]
+                                  )
+                                : makeView(
+                                      data,
+                                      (data.children as PluginArgumentObject[]).find((el) => el.name === key),
+                                      key,
+                                      value.type,
+                                      plugin.requiredProperties !== undefined &&
+                                          plugin.requiredProperties.includes(key),
+                                      (data.children as PluginArgumentObject[]).find((el) => el.name === key)?.value,
+                                      value["properties"]
+                                  )
+                        }
+                    >
+                        <ListItemAvatar>
+                            <Avatar>{makeIcon(value.type, key)}</Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                            primary={`${key}${
+                                plugin.requiredProperties !== undefined && plugin.requiredProperties.includes(key)
+                                    ? "*"
+                                    : ""
+                            }`}
+                            secondary="description"
+                        />
+                    </ListItem>
+                    {value.type === "object" && (
+                        <Collapse in={openStates[key]} timeout="auto" unmountOnExit>
+                            <List component="div" disablePadding sx={{ pl: 4 }}>
+                                {"properties" in value &&
+                                    Object.entries(value["properties"]).map(([k, v]) =>
+                                        makeArgument(data, k, v, plugin)
+                                    )}
+                            </List>
+                        </Collapse>
+                    )}
+                </>
+            );
         }
         return <></>;
     };
@@ -156,7 +310,12 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
             return (
                 <>
                     <h3>Text</h3>
-                    <TextField multiline defaultValue={data.name} />
+                    <span className="PluginDescription">Plain text</span>
+                    {props.mode === PreviewMode.Edit ? (
+                        <TextField multiline defaultValue={data.name} style={{ width: "100%" }} />
+                    ) : (
+                        data.name
+                    )}
                 </>
             );
         }
@@ -170,31 +329,12 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
                 <>
                     <h3>{data.name}</h3>
                     <span className="PluginDescription">{plugin?.description || ""}</span>
-                    {plugin.properties &&
-                        Object.entries(plugin.properties).map(([key, value], index) => (
-                            <>
-                                <h4 style={{ whiteSpace: "nowrap" }}>
-                                    {key}
-                                    {plugin.requiredProperties !== undefined &&
-                                        plugin.requiredProperties.includes(key) && (
-                                            <Typography color="error" variant="inherit">
-                                                *
-                                            </Typography>
-                                        )}
-                                </h4>
-                                {"type" in value &&
-                                    makeInput(
-                                        data,
-                                        (data.children as PluginArgumentObject[]).find((el) => el.name === key),
-                                        key,
-                                        value.type,
-                                        plugin.requiredProperties !== undefined &&
-                                            plugin.requiredProperties.includes(key),
-                                        (data.children as PluginArgumentObject[]).find((el) => el.name === key)?.value,
-                                        value["properties"]
-                                    )}
-                            </>
-                        ))}
+                    <List>
+                        {plugin.properties &&
+                            Object.entries(plugin.properties).map(([key, value], index) =>
+                                makeArgument(data, key, value, plugin)
+                            )}
+                    </List>
                 </>
             );
         }

@@ -48,6 +48,7 @@ export enum StoreActions {
 export enum UpdateSource {
     Editor = "EDITOR",
     Preview = "PREVIEW",
+    Plugin = "PLUGIN",
 }
 
 export type StoreState = {
@@ -97,6 +98,7 @@ type Payload = {
     };
     [StoreActions.SetCurrentPage]: {
         pageId: string;
+        source: UpdateSource;
     };
     [StoreActions.SetRecentDocuments]: {
         recentDocuments: string[];
@@ -175,6 +177,7 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
                 currentEditorContent: fileContent,
                 currentYamlObjects: state.yamlParser.getObjects(),
                 selectedYamlObject: undefined,
+                updateSource: UpdateSource.Editor,
                 files: [
                     ...newFiles,
                     {
@@ -222,6 +225,7 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
             currentEditorContent: "",
             currentYamlObjects: [],
             selectedYamlObject: undefined,
+            updateSource: UpdateSource.Editor,
         };
     } else if (action.type === StoreActions.CloseFile) {
         const fileToClose = state.files.find((file) => file.uuid === action.payload.uuid);
@@ -251,6 +255,7 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
                 currentEditorContent: newCurrentEditorContent,
                 currentYamlObjects: state.yamlParser.getObjects(),
                 selectedYamlObject: undefined,
+                updateSource: UpdateSource.Editor,
             };
         }
         return state;
@@ -289,6 +294,7 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
                         currentEditorContent: newCurrentEditorContent,
                         currentYamlObjects: state.yamlParser.getObjects(),
                         selectedYamlObject: undefined,
+                        updateSource: UpdateSource.Editor,
                     };
                 }
             }
@@ -358,6 +364,7 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
             (state.files.find((el) => el.uuid === state.activeFileUuid)?.editorModel.getValue() || "");
         return {
             ...state,
+            updateSource: action.payload.source,
             currentEditorContent: action.payload.content,
             currentYamlObjects:
                 JSON.stringify(state.yamlParser.getObjects()) !== JSON.stringify(state.currentYamlObjects)
@@ -420,10 +427,15 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
         }
         return state;
     } else if (action.type === StoreActions.SetCurrentPage) {
-        return {
-            ...state,
-            currentPageId: action.payload.pageId,
-        };
+        const object = state.yamlParser.getObjectById(action.payload.pageId);
+        if (object) {
+            return {
+                ...state,
+                updateSource: action.payload.source,
+                selectedYamlObject: object,
+                currentPageId: action.payload.pageId,
+            };
+        }
     } else if (action.type === StoreActions.SetRecentDocuments) {
         return {
             ...state,

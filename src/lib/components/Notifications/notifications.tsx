@@ -47,7 +47,7 @@ export const NotificationsProvider: React.FC = (props) => {
         [notifications, setNotifications]
     );
 
-    const handleClose = (_: React.SyntheticEvent | React.MouseEvent, reason?: string) => {
+    const handleClose = (_: Event | React.SyntheticEvent<any, Event>, reason?: string) => {
         if (reason === "clickaway") {
             return;
         }

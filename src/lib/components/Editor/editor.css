@@ -48,28 +48,28 @@
     height: auto;
 }
 
-.Problems {
+.Issues {
     max-height: 100%;
     display: flex;
     flex-direction: column;
 }
 
-.ProblemsTitle {
+.IssuesTitle {
     padding: 12px;
     font-size: 0.8em;
     display: flex;
     align-items: center;
 }
 
-.ProblemsTitle > strong {
+.IssuesTitle > strong {
     margin-left: 8px;
 }
 
-.ProblemsContent {
+.IssuesContent {
     overflow: auto;
 }
 
-.Problem {
+.Issue {
     padding: 8px;
     font-size: 0.8em;
     margin: auto;
@@ -78,10 +78,10 @@
     cursor: pointer;
 }
 
-.Problem svg {
+.Issue svg {
     margin-right: 8px;
 }
 
-.ProblemPosition {
+.IssuePosition {
     margin-left: 8px;
 }

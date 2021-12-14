@@ -1,5 +1,4 @@
 .Plugin {
-    background-color: #fefefe;
     border-color: #ccc;
     border-radius: 4px;
     border-style: solid;
@@ -12,6 +11,8 @@
 .PluginDescription {
     font-size: 0.9rem;
     font-style: italic;
+    display: block;
+    margin-bottom: 16px;
 }
 
 .Plugin:hover {
