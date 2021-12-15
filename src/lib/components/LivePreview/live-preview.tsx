@@ -11,18 +11,14 @@ import { MenuWrapper } from "../MenuWrapper";
 import { FilesStore, SettingsStore } from "../Store";
 
 import "./live-preview.css";
-import { ErrorBoundary } from "../ErrorBoundary";
 import { PluginVisualizer } from "../PluginVisualizer";
-import { LayoutObject, YamlObjectType } from "../../utils/yaml-parser";
-import { Grid, Paper, Stack, ToggleButton, ToggleButtonGroup, Typography, useTheme } from "@mui/material";
+import { LayoutObject, YamlLayoutObjectType } from "../../utils/yaml-parser";
+import { Paper, Stack, ToggleButtonGroup, ToggleButton, Tooltip, Typography, useTheme } from "@mui/material";
+import { withStyles } from "@mui/styles";
 import { Edit, Visibility } from "@mui/icons-material";
 import { UpdateSource } from "../Store/stores/files-store";
 
 type LivePreviewProps = {};
-
-interface Yaml {
-    [key: string]: string | boolean | number | Yaml[] | Yaml;
-}
 
 type MenuReturnProps = {
     url: string;
@@ -33,13 +29,18 @@ export enum PreviewMode {
     View = "VIEW",
 }
 
+export type SelectedNavigationItem = {
+    type: Omit<YamlLayoutObjectType, YamlLayoutObjectType.Plugin | YamlLayoutObjectType.PlainText>;
+    number: number;
+};
+
 export const LivePreview: React.FC<LivePreviewProps> = (props) => {
     const [navigationItems, setNavigationItems] = React.useState<PropertyNavigationType>([]);
     const [title, setTitle] = React.useState<string>("");
     const [mode, setMode] = React.useState<PreviewMode>(PreviewMode.View);
     const [currentPageContent, setCurrentPageContent] = React.useState<LayoutObject[]>([]);
     const store = FilesStore.useStore();
-
+    const [selectedNavigationItem, setSelectedNavigationItem] = React.useState<SelectedNavigationItem | null>(null);
     const theme = useTheme();
 
     React.useEffect(() => {
@@ -65,14 +66,41 @@ export const LivePreview: React.FC<LivePreviewProps> = (props) => {
         setCurrentPageContent((object?.children as LayoutObject[]) || []);
     }, [store.state.currentPageId, store.state.updateSource]);
 
+    React.useEffect(() => {
+        if (
+            store.state.selectedYamlObject &&
+            "type" in store.state.selectedYamlObject &&
+            "number" in store.state.selectedYamlObject &&
+            (store.state.selectedYamlObject["type"] === YamlLayoutObjectType.Section ||
+                store.state.selectedYamlObject["type"] === YamlLayoutObjectType.Group ||
+                store.state.selectedYamlObject["type"] === YamlLayoutObjectType.Page)
+        ) {
+            setSelectedNavigationItem({
+                type: store.state.selectedYamlObject["type"],
+                number: store.state.selectedYamlObject["number"],
+            });
+        } else {
+            setSelectedNavigationItem(null);
+        }
+    }, [store.state.selectedYamlObject]);
+
     return (
         <div className="LivePreview">
             <Paper square className="LivePreview__Title" style={{ backgroundColor: theme.palette.background.paper }}>
                 <Stack spacing={4} direction="row" alignItems="center" justifyContent="space-between">
                     <Typography variant="subtitle1">{title || <em>No title defined yet</em>}</Typography>
-                    <ToggleButtonGroup value={mode} exclusive onChange={(e, v) => setMode(v)} aria-label="preview mode">
-                        <ToggleButton value={PreviewMode.Edit} aria-label="edit mode">
-                            <Edit />
+                    <ToggleButtonGroup
+                        value={mode}
+                        exclusive
+                        onChange={() => {
+                            return;
+                        }}
+                        aria-label="preview mode"
+                    >
+                        <ToggleButton value={PreviewMode.Edit} aria-label="edit mode" disabled>
+                            <Tooltip title="This feature is coming soon." style={{ pointerEvents: "auto" }}>
+                                <Edit />
+                            </Tooltip>
                         </ToggleButton>
                         <ToggleButton value={PreviewMode.View} aria-label="view mode">
                             <Visibility />
@@ -89,6 +117,7 @@ export const LivePreview: React.FC<LivePreviewProps> = (props) => {
                                 payload: { pageId: props.url, source: FilesStore.UpdateSource.Preview },
                             })
                         }
+                        selectedItem={selectedNavigationItem}
                         navigationItems={navigationItems}
                         menuBarPosition="left"
                         inline={true}

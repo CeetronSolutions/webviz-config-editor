@@ -4,6 +4,7 @@
     height: 100%;
     align-items: stretch;
     overflow: auto;
+    cursor: pointer;
 }
 
 .LivePreview__Title {

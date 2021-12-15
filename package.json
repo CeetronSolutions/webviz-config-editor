@@ -11,6 +11,8 @@
         "@emotion/styled": "^11.3.0",
         "@mui/icons-material": "^5.2.1",
         "@mui/material": "^5.2.2",
+        "@mui/styles": "^5.2.3",
+        "@pathofdev/react-tag-input": "^1.0.7",
         "@pmmmwh/react-refresh-webpack-plugin": "0.4.3",
         "@react-hook/size": "^2.1.2",
         "@svgr/webpack": "5.5.0",

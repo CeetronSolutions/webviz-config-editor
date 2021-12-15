@@ -4,8 +4,14 @@ import { MenuProps } from "@webviz/core-components/dist/components/Menu/Menu";
 
 import "./menu-wrapper.css";
 import { useTheme } from "@mui/material";
+import { SelectedNavigationItem } from "../LivePreview/live-preview";
+import { YamlLayoutObjectType } from "../../utils/yaml-parser";
 
-export const MenuWrapper: React.FC<MenuProps> = (props) => {
+type MenuWrapperProps = MenuProps & {
+    selectedItem: SelectedNavigationItem | null;
+};
+
+export const MenuWrapper: React.FC<MenuWrapperProps> = (props) => {
     const menuWrapperRef = React.useRef<HTMLDivElement | null>(null);
     const [visible, setVisible] = React.useState<boolean>(false);
     const [width, setWidth] = React.useState<number>(0);
@@ -24,6 +30,38 @@ export const MenuWrapper: React.FC<MenuProps> = (props) => {
         },
         [setWidth]
     );
+
+    React.useEffect(() => {
+        if (menuWrapperRef.current) {
+            for (const element of menuWrapperRef.current.getElementsByClassName("MenuWrapper__SelectedItem")) {
+                element.classList.remove("MenuWrapper__SelectedItem");
+            }
+            if (props.selectedItem) {
+                if (props.selectedItem.type === YamlLayoutObjectType.Section) {
+                    const section = menuWrapperRef.current.getElementsByClassName("Menu__Section")[
+                        props.selectedItem.number
+                    ] as HTMLElement | undefined;
+                    if (section) {
+                        section.classList.add("MenuWrapper__SelectedItem");
+                    }
+                } else if (props.selectedItem.type === YamlLayoutObjectType.Group) {
+                    const group = menuWrapperRef.current.getElementsByClassName("Menu__Group")[
+                        props.selectedItem.number
+                    ] as HTMLElement | undefined;
+                    if (group) {
+                        group.classList.add("MenuWrapper__SelectedItem");
+                    }
+                } else if (props.selectedItem.type === YamlLayoutObjectType.Page) {
+                    const page = menuWrapperRef.current.getElementsByClassName("Menu__Page")[
+                        props.selectedItem.number
+                    ] as HTMLElement | undefined;
+                    if (page) {
+                        page.classList.add("MenuWrapper__SelectedItem");
+                    }
+                }
+            }
+        }
+    }, [props.selectedItem]);
 
     React.useEffect(() => {
         setResizeObserver(new ResizeObserver(updateWidth));

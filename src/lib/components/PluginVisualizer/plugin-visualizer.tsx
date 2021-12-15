@@ -1,6 +1,5 @@
 import React from "react";
 import { monaco } from "react-monaco-editor";
-import { WithContext as ReactTags } from "react-tag-input";
 
 import { FilesStore, SettingsStore } from "../Store";
 import { LayoutObject, PluginArgumentObject } from "../../utils/yaml-parser";
@@ -20,10 +19,7 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material";
 import {
-    Settings,
-    TextFields,
     ToggleOn,
-    Tag,
     Person,
     DataObject,
     Numbers,
@@ -31,8 +27,10 @@ import {
     DataArray,
     ExpandLess,
     ExpandMore,
+    QuestionMark,
 } from "@mui/icons-material";
-import { TagsInput } from "react-tag-input-component";
+import ReactTagInput from "@pathofdev/react-tag-input";
+import "@pathofdev/react-tag-input/build/index.css";
 import { Plugin } from "../../utils/plugin-parser";
 import { PreviewMode } from "../LivePreview/live-preview";
 
@@ -64,7 +62,7 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
             type: FilesStore.StoreActions.UpdateSelection,
             payload: {
                 selection: new monaco.Selection(props.pluginData.startLineNumber, 0, props.pluginData.endLineNumber, 0),
-                source: FilesStore.UpdateSource.Plugin,
+                source: FilesStore.UpdateSource.Preview,
             },
         });
     };
@@ -175,7 +173,15 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
                     />
                 );
             case "array":
-                return <TagsInput value={[]} name={key} placeHolder={key} />;
+                return (
+                    <ReactTagInput
+                        tags={(argument?.value as string[]) || []}
+                        placeholder="Type and press enter..."
+                        onChange={() => {
+                            return;
+                        }}
+                    />
+                );
             case "object":
                 return (
                     <Button
@@ -234,7 +240,7 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
                 return <ToggleOn />;
             case "integer":
                 return <Numbers />;
-            case "list":
+            case "array":
                 return <DataArray />;
             case "object":
                 if (name === "contact_person") {
@@ -242,6 +248,8 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
                 } else {
                     return <DataObject />;
                 }
+            default:
+                return <QuestionMark />;
         }
     };
 
@@ -250,6 +258,13 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
             props.mode === PreviewMode.Edit ||
             (data.children as PluginArgumentObject[]).find((el) => el.name === key)?.value !== undefined
         ) {
+            const selected =
+                store.state.selectedYamlObject &&
+                "name" in store.state.selectedYamlObject &&
+                "value" in store.state.selectedYamlObject &&
+                store.state.selectedYamlObject["name"] === key;
+
+            const argument = (data.children as PluginArgumentObject[]).find((el) => el.name === key);
             return (
                 <>
                     <ListItem
@@ -257,25 +272,26 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
                             props.mode === PreviewMode.Edit
                                 ? makeInput(
                                       data,
-                                      (data.children as PluginArgumentObject[]).find((el) => el.name === key),
+                                      argument,
                                       key,
                                       value.type,
                                       plugin.requiredProperties !== undefined &&
                                           plugin.requiredProperties.includes(key),
-                                      (data.children as PluginArgumentObject[]).find((el) => el.name === key)?.value,
+                                      argument?.value,
                                       value["properties"]
                                   )
                                 : makeView(
                                       data,
-                                      (data.children as PluginArgumentObject[]).find((el) => el.name === key),
+                                      argument,
                                       key,
                                       value.type,
                                       plugin.requiredProperties !== undefined &&
                                           plugin.requiredProperties.includes(key),
-                                      (data.children as PluginArgumentObject[]).find((el) => el.name === key)?.value,
+                                      argument?.value,
                                       value["properties"]
                                   )
                         }
+                        className={selected ? "Plugin--selected" : ""}
                     >
                         <ListItemAvatar>
                             <Avatar>{makeIcon(value.type, key)}</Avatar>
@@ -292,9 +308,15 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
                     {value.type === "object" && (
                         <Collapse in={openStates[key]} timeout="auto" unmountOnExit>
                             <List component="div" disablePadding sx={{ pl: 4 }}>
-                                {"properties" in value &&
+                                {props.mode === PreviewMode.Edit &&
+                                    "properties" in value &&
                                     Object.entries(value["properties"]).map(([k, v]) =>
                                         makeArgument(data, k, v, plugin)
+                                    )}
+                                {props.mode === PreviewMode.View &&
+                                    argument &&
+                                    Object.entries(argument.value).map(([k, v]) =>
+                                        makeSubArgument(v["type"], v["name"], v["value"])
                                     )}
                             </List>
                         </Collapse>
@@ -303,6 +325,25 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
             );
         }
         return <></>;
+    };
+
+    const makeSubArgument = (type: string, key: string, value: any) => {
+        const selected =
+            store.state.selectedYamlObject &&
+            "name" in store.state.selectedYamlObject &&
+            "value" in store.state.selectedYamlObject &&
+            store.state.selectedYamlObject["name"] === key;
+        return (
+            <ListItem
+                secondaryAction={props.mode === PreviewMode.View && value}
+                className={selected ? "Plugin--selected" : ""}
+            >
+                <ListItemAvatar>
+                    <Avatar>{makeIcon(type, key)}</Avatar>
+                </ListItemAvatar>
+                <ListItemText primary={key} secondary="description" />
+            </ListItem>
+        );
     };
 
     const renderPlugin = (data: LayoutObject): React.ReactNode => {

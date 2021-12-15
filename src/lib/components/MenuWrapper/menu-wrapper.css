@@ -4,3 +4,9 @@
     height: 100%;
     margin-top: 1px;
 }
+
+.MenuWrapper__SelectedItem {
+    outline-style: solid;
+    outline-width: 2px;
+    outline-color: rgba(255, 208, 54, 0.616);
+}

@@ -40,6 +40,7 @@ export interface YamlObject extends YamlMetaObject {
 export interface LayoutObject extends YamlMetaObject {
     type: YamlLayoutObjectType;
     id: string;
+    number: number;
     name?: string;
     icon?: string;
     children: LayoutObject[] | PluginArgumentObject[];
@@ -128,16 +129,30 @@ type RegisteredElements = {
     numberElements: number;
 };
 
+type NumberOfLayoutItems = {
+    sections: number;
+    groups: number;
+    pages: number;
+    plugins: number;
+};
+
 export class YamlParser {
     private objects: YamlObject[];
     private parsedString: string;
     private idObjectsMap: IdLinesMapType[];
     private registeredElements: RegisteredElements[];
+    private numberOfLayoutItems: NumberOfLayoutItems;
     constructor() {
         this.objects = [];
         this.parsedString = "";
         this.idObjectsMap = [];
         this.registeredElements = [];
+        this.numberOfLayoutItems = {
+            sections: 0,
+            groups: 0,
+            pages: 0,
+            plugins: 0,
+        };
     }
 
     getLineNumber(offset: number): number {
@@ -311,7 +326,7 @@ export class YamlParser {
             endLineNumber = this.getEndLineNumber(item);
             indent = item.indent;
         }
-        const id = this.makeId(item.indent);
+        const id = this.makeId(item.indent || 0);
         const newObject = { ...object, id: id, startLineNumber: startLineNumber, endLineNumber: endLineNumber };
         this.idObjectsMap.push({
             id: id,
@@ -401,6 +416,7 @@ export class YamlParser {
                 type: YamlLayoutObjectType.PlainText,
                 name: value.source,
                 children: [],
+                number: this.numberOfLayoutItems.plugins++,
             },
             value
         );
@@ -416,6 +432,7 @@ export class YamlParser {
                 name: (section?.value as yaml.CST.FlowScalar).source || "",
                 icon: (icon?.value as yaml.CST.FlowScalar)?.source,
                 children: content ? this.parseLayout(content.value as yaml.CST.BlockSequence) : [],
+                number: this.numberOfLayoutItems.sections++,
             },
             map
         );
@@ -431,6 +448,7 @@ export class YamlParser {
                 name: (section?.value as yaml.CST.FlowScalar).source || "",
                 icon: (icon?.value as yaml.CST.FlowScalar)?.source,
                 children: content ? this.parseLayout(content.value as yaml.CST.BlockSequence) : [],
+                number: this.numberOfLayoutItems.groups++,
             },
             map
         );
@@ -446,6 +464,7 @@ export class YamlParser {
                 name: (section?.value as yaml.CST.FlowScalar).source || "",
                 icon: (icon?.value as yaml.CST.FlowScalar)?.source,
                 children: content ? this.parseLayout(content.value as yaml.CST.BlockSequence) : [],
+                number: this.numberOfLayoutItems.pages++,
             },
             map
         );
@@ -459,6 +478,7 @@ export class YamlParser {
                 type: YamlLayoutObjectType.Plugin,
                 name: name,
                 children: this.parsePluginOptions(options),
+                number: this.numberOfLayoutItems.plugins++,
             },
             map
         );
