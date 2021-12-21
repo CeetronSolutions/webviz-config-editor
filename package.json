@@ -1,5 +1,5 @@
 {
-    "name": "Webviz Config Editor",
+    "name": "webviz-config-editor",
     "version": "0.1.0",
     "private": true,
     "homepage": ".",
@@ -29,7 +29,7 @@
         "@types/react-router-dom": "^5.3.1",
         "@typescript-eslint/eslint-plugin": "^4.5.0",
         "@typescript-eslint/parser": "^4.5.0",
-        "@webviz/core-components": "file:../../../webviz-core-components-0.5.8.tgz",
+        "@webviz/core-components": "file:../../webviz-core-components-0.5.8.tgz",
         "babel-eslint": "^10.1.0",
         "babel-jest": "^26.6.0",
         "babel-loader": "8.1.0",
@@ -113,6 +113,7 @@
         "electron:build": "npm run build && tsc -p electron && electron-builder",
         "start": "node scripts/start.js",
         "build": "node scripts/build.js",
+        "start:electron": "tsc -p electron -w && tsc -p electron && electron .",
         "test": "node scripts/test.js"
     },
     "build": {
@@ -147,7 +148,7 @@
         "@types/which": "^2.0.1",
         "concurrently": "^6.3.0",
         "cross-env": "^7.0.3",
-        "electron": "^15.3.1",
+        "electron": "^16.0.2",
         "electron-builder": "^22.13.1",
         "wait-on": "^6.0.0"
     },

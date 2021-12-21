@@ -6,6 +6,7 @@
     padding: 16px;
     margin: 8px;
     display: block;
+    cursor: pointer;
 }
 
 .PluginDescription {

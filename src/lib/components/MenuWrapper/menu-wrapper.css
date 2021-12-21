@@ -1,7 +1,7 @@
 .MenuWrapper {
     position: relative;
     user-select: none;
-    height: 100%;
+    height: calc(100%-1px);
     margin-top: 1px;
 }
 

@@ -15,6 +15,7 @@ export interface SettingMeta {
     type: "string" | "number" | "file" | "pythonInterpreter" | "theme";
     defaultValue: string | number | boolean;
     fileFilter?: FileFilter[];
+    needsInitialization?: boolean;
 }
 
 export const Settings: { [key: string]: SettingMeta[] } = {
@@ -25,6 +26,7 @@ export const Settings: { [key: string]: SettingMeta[] } = {
             description: "Select the interpreter that you are using with Webviz.",
             type: "pythonInterpreter",
             defaultValue: "",
+            needsInitialization: true,
         },
     ],
     Webviz: [
@@ -40,6 +42,7 @@ export const Settings: { [key: string]: SettingMeta[] } = {
                     extensions: ["json"],
                 },
             ],
+            needsInitialization: true,
         },
         {
             id: "theme",

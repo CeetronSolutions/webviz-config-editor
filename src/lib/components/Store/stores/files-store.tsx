@@ -9,13 +9,32 @@ import fs from "fs";
 import { editor, Uri, Selection, SelectionDirection } from "monaco-editor";
 import { uuid } from "uuidv4";
 
+import { PropertyNavigationType } from "@webviz/core-components/dist/components/Menu/types/navigation";
+
 import { File } from "../../../types/file";
 import { LogEntry, LogEntryType } from "../../../types/log";
-import { YamlParser, YamlObject, YamlMetaObject } from "../../../utils/yaml-parser";
+import { YamlObject, YamlMetaObject, LayoutObject } from "../../../utils/yaml-parser";
+import {
+    YamlParserWorkerRequestType,
+    YamlParserWorkerResponseType,
+    YamlParserWorkerResponseData,
+} from "../../../types/yaml-parser-worker";
 
 type ActionMap<
     M extends {
-        [index: string]: { [key: string]: string | number | Setting[] | object | editor.ICodeEditorViewState | null };
+        [index: string]: {
+            [key: string]:
+                | string
+                | number
+                | Setting[]
+                | object
+                | editor.ICodeEditorViewState
+                | null
+                | YamlMetaObject
+                | undefined
+                | YamlObject[]
+                | LayoutObject;
+        };
     }
 > = {
     [Key in keyof M]: M[Key] extends undefined
@@ -43,6 +62,10 @@ export enum StoreActions {
     SaveFileAs = "SAVE_FILE_AS",
     SetCurrentPage = "SET_CURRENT_PAGE",
     SetRecentDocuments = "SET_RECENT_DOCUMENTS",
+    SetCurrentObjects = "SET_CURRENT_OBJECTS",
+    SetSelectedObject = "SET_SELECTED_OBJECT",
+    SetCurrentObjectsAndSelection = "SET_CURRENT_OBJECTS_AND_SELECTION",
+    SetPageId = "SET_PAGE_ID",
 }
 
 export enum UpdateSource {
@@ -53,13 +76,15 @@ export enum UpdateSource {
 
 export type StoreState = {
     activeFileUuid: string;
+    title: string;
+    navigationItems: PropertyNavigationType;
     files: File[];
     log: LogEntry[];
     currentEditorContent: string;
     currentYamlObjects: YamlObject[];
     selectedYamlObject: YamlMetaObject | undefined;
     updateSource: UpdateSource;
-    yamlParser: YamlParser;
+    yamlParserWorker: Worker;
     currentPageId: string;
     recentDocuments: string[];
 };
@@ -103,6 +128,20 @@ type Payload = {
     [StoreActions.SetRecentDocuments]: {
         recentDocuments: string[];
     };
+    [StoreActions.SetCurrentObjects]: {
+        currentObjects: YamlObject[];
+        title: string;
+        navigationItems: PropertyNavigationType;
+    };
+    [StoreActions.SetCurrentObjectsAndSelection]: {
+        currentObjects: YamlObject[];
+        selectedObject: YamlObject;
+        page?: LayoutObject;
+    };
+    [StoreActions.SetSelectedObject]: {
+        object: YamlMetaObject | undefined;
+        page?: LayoutObject;
+    };
 };
 
 export type Actions = ActionMap<Payload>[keyof ActionMap<Payload>];
@@ -111,6 +150,8 @@ const initialUuid = uuid();
 
 const initialState: StoreState = {
     activeFileUuid: initialUuid,
+    title: "",
+    navigationItems: [],
     files: [
         {
             uuid: initialUuid,
@@ -125,7 +166,7 @@ const initialState: StoreState = {
     currentYamlObjects: [],
     selectedYamlObject: undefined,
     updateSource: UpdateSource.Editor,
-    yamlParser: new YamlParser(),
+    yamlParserWorker: new Worker("../../utils/parser-worker.js"),
     currentPageId: "",
     recentDocuments: [],
 };
@@ -142,11 +183,15 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
         }
         const newEditorContent =
             state.files.find((file) => file.uuid === action.payload.uuid)?.editorModel.getValue() || "";
-        state.yamlParser.parse(newEditorContent);
+
+        state.yamlParserWorker.postMessage({
+            type: YamlParserWorkerRequestType.Parse,
+            text: newEditorContent,
+        });
         return {
             ...state,
             currentEditorContent: newEditorContent,
-            currentYamlObjects: state.yamlParser.getObjects(),
+            currentYamlObjects: [],
             selectedYamlObject: undefined,
             activeFileUuid: action.payload.uuid,
         };
@@ -170,12 +215,15 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
             }
             const fileContent = fs.readFileSync(action.payload.filePath).toString();
             const fileUuid = uuid();
-            state.yamlParser.parse(fileContent);
+            state.yamlParserWorker.postMessage({
+                type: YamlParserWorkerRequestType.Parse,
+                text: fileContent,
+            });
             return {
                 ...state,
                 activeFileUuid: fileUuid,
                 currentEditorContent: fileContent,
-                currentYamlObjects: state.yamlParser.getObjects(),
+                currentYamlObjects: [],
                 selectedYamlObject: undefined,
                 updateSource: UpdateSource.Editor,
                 files: [
@@ -248,12 +296,16 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
             }
             const newCurrentEditorContent =
                 state.files.find((file) => file.uuid === newActiveFileUUid)?.editorModel.getValue() || "";
+            state.yamlParserWorker.postMessage({
+                type: YamlParserWorkerRequestType.Parse,
+                text: newCurrentEditorContent,
+            });
             return {
                 ...state,
                 files: state.files.filter((file) => file.uuid !== action.payload.uuid),
                 activeFileUuid: newActiveFileUUid,
                 currentEditorContent: newCurrentEditorContent,
-                currentYamlObjects: state.yamlParser.getObjects(),
+                currentYamlObjects: [],
                 selectedYamlObject: undefined,
                 updateSource: UpdateSource.Editor,
             };
@@ -286,13 +338,16 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
                     }
                     const newCurrentEditorContent =
                         state.files.find((file) => file.uuid === newActiveFileUUid)?.editorModel.getValue() || "";
-                    state.yamlParser.parse(newCurrentEditorContent);
+                    state.yamlParserWorker.postMessage({
+                        type: YamlParserWorkerRequestType.Parse,
+                        text: newCurrentEditorContent,
+                    });
                     return {
                         ...state,
                         files: state.files.filter((file) => file.uuid !== action.payload.uuid),
                         activeFileUuid: newActiveFileUUid,
                         currentEditorContent: newCurrentEditorContent,
-                        currentYamlObjects: state.yamlParser.getObjects(),
+                        currentYamlObjects: [],
                         selectedYamlObject: undefined,
                         updateSource: UpdateSource.Editor,
                     };
@@ -358,7 +413,10 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
             };
         }
     } else if (action.type === StoreActions.UpdateCurrentContent) {
-        state.yamlParser.parse(action.payload.content);
+        state.yamlParserWorker.postMessage({
+            type: YamlParserWorkerRequestType.Parse,
+            text: action.payload.content,
+        });
         const unsavedChanges =
             action.payload.content !==
             (state.files.find((el) => el.uuid === state.activeFileUuid)?.editorModel.getValue() || "");
@@ -366,80 +424,87 @@ export const StoreReducer = (state: StoreState, action: Actions): StoreState => 
             ...state,
             updateSource: action.payload.source,
             currentEditorContent: action.payload.content,
-            currentYamlObjects:
-                JSON.stringify(state.yamlParser.getObjects()) !== JSON.stringify(state.currentYamlObjects)
-                    ? state.yamlParser.getObjects()
-                    : state.currentYamlObjects,
             files: state.files.map((el) =>
                 el.uuid === state.activeFileUuid ? { ...el, unsavedChanges: unsavedChanges } : el
             ),
         };
     } else if (action.type === StoreActions.UpdateCurrentContentAndSetSelection) {
-        state.yamlParser.parse(action.payload.content);
+        state.yamlParserWorker.postMessage({
+            type: YamlParserWorkerRequestType.ParseAndSetSelection,
+            text: action.payload.content,
+            startLineNumber: Math.min(
+                action.payload.selection.selectionStartLineNumber,
+                action.payload.selection.positionLineNumber
+            ),
+            endLineNumber: Math.max(
+                action.payload.selection.selectionStartLineNumber,
+                action.payload.selection.positionLineNumber
+            ),
+        });
         const unsavedChanges =
             action.payload.content !==
             (state.files.find((el) => el.uuid === state.activeFileUuid)?.editorModel.getValue() || "");
-        const object = state.yamlParser.findClosestObject(
-            Math.min(action.payload.selection.selectionStartLineNumber, action.payload.selection.positionLineNumber),
-            Math.max(action.payload.selection.selectionStartLineNumber, action.payload.selection.positionLineNumber)
-        );
-        const page = state.yamlParser.findClosestPage(
-            Math.min(action.payload.selection.selectionStartLineNumber, action.payload.selection.positionLineNumber),
-            Math.max(action.payload.selection.selectionStartLineNumber, action.payload.selection.positionLineNumber)
-        );
         return {
             ...state,
             currentEditorContent: action.payload.content,
-            currentYamlObjects:
-                JSON.stringify(state.yamlParser.getObjects()) !== JSON.stringify(state.currentYamlObjects)
-                    ? state.yamlParser.getObjects()
-                    : state.currentYamlObjects,
             files: state.files.map((el) =>
                 el.uuid === state.activeFileUuid ? { ...el, unsavedChanges: unsavedChanges } : el
             ),
-            selectedYamlObject: object,
-            currentPageId: page?.id || "",
+        };
+    } else if (action.type === StoreActions.SetCurrentObjectsAndSelection) {
+        return {
+            ...state,
+            currentYamlObjects: action.payload.currentObjects,
+            selectedYamlObject: action.payload.selectedObject,
+            currentPageId: action.payload.page?.id || "",
         };
     } else if (action.type === StoreActions.UpdateSelection) {
         const currentFile = state.files.find((file) => file.uuid === state.activeFileUuid);
         if (currentFile) {
             currentFile.selection = action.payload.selection;
-            const object = state.yamlParser.findClosestObject(
-                Math.min(
+            state.yamlParserWorker.postMessage({
+                type: YamlParserWorkerRequestType.GetClosestObject,
+                startLineNumber: Math.min(
                     action.payload.selection.selectionStartLineNumber,
                     action.payload.selection.positionLineNumber
                 ),
-                Math.max(action.payload.selection.selectionStartLineNumber, action.payload.selection.positionLineNumber)
-            );
-            const page = state.yamlParser.findClosestPage(
-                Math.min(
+                endLineNumber: Math.max(
                     action.payload.selection.selectionStartLineNumber,
                     action.payload.selection.positionLineNumber
                 ),
-                Math.max(action.payload.selection.selectionStartLineNumber, action.payload.selection.positionLineNumber)
-            );
+            });
             return {
                 ...state,
                 updateSource: action.payload.source,
-                selectedYamlObject: object,
-                currentPageId: page?.id || "",
             };
         }
         return state;
+    } else if (action.type === StoreActions.SetSelectedObject) {
+        return {
+            ...state,
+            selectedYamlObject: action.payload.object,
+            currentPageId: action.payload.page?.id || "",
+        };
     } else if (action.type === StoreActions.SetCurrentPage) {
-        const object = state.yamlParser.getObjectById(action.payload.pageId);
-        if (object) {
-            return {
-                ...state,
-                updateSource: action.payload.source,
-                selectedYamlObject: object,
-                currentPageId: action.payload.pageId,
-            };
-        }
+        state.yamlParserWorker.postMessage({
+            type: YamlParserWorkerRequestType.GetObjectById,
+            id: action.payload.pageId,
+        });
+        return {
+            ...state,
+            updateSource: action.payload.source,
+        };
     } else if (action.type === StoreActions.SetRecentDocuments) {
         return {
             ...state,
             recentDocuments: action.payload.recentDocuments,
+        };
+    } else if (action.type === StoreActions.SetCurrentObjects) {
+        return {
+            ...state,
+            currentYamlObjects: action.payload.currentObjects,
+            title: action.payload.title,
+            navigationItems: action.payload.navigationItems,
         };
     }
     return state;
@@ -456,6 +521,48 @@ export const StoreProvider: React.FC = (props) => {
     const [state, dispatch] = React.useReducer(StoreReducer, initialState, StoreReducerInit);
 
     const notifications = useNotifications();
+
+    React.useEffect(() => {
+        if (state.yamlParserWorker.onmessage) {
+            state.yamlParserWorker.onmessage = (e: MessageEvent) => {
+                const data = e.data;
+                switch (data.type) {
+                    case YamlParserWorkerResponseType.Parsed:
+                        dispatch({
+                            type: StoreActions.SetCurrentObjects,
+                            payload: {
+                                currentObjects: data.objects,
+                                title: data.title,
+                                navigationItems: data.navigationItems,
+                            },
+                        });
+                        break;
+                    case YamlParserWorkerResponseType.ParsedAndSetSelection:
+                        dispatch({
+                            type: StoreActions.SetCurrentObjectsAndSelection,
+                            payload: {
+                                currentObjects: data.objects,
+                                selectedObject: data.selectedObject,
+                                page: data.page,
+                            },
+                        });
+                        break;
+                    case YamlParserWorkerResponseType.ClosestObject:
+                        dispatch({
+                            type: StoreActions.SetSelectedObject,
+                            payload: { object: data.object, page: data.page },
+                        });
+                        break;
+                    case YamlParserWorkerResponseType.ObjectById:
+                        dispatch({
+                            type: StoreActions.SetSelectedObject,
+                            payload: { object: data.object, page: data.object as LayoutObject },
+                        });
+                        break;
+                }
+            };
+        }
+    }, [state.yamlParserWorker]);
 
     React.useEffect(() => {
         ipcRenderer.on("FILE_OPEN", (event, args) => {

@@ -6,8 +6,10 @@ import { setDiagnosticsOptions } from "monaco-yaml";
 import { ipcRenderer } from "electron";
 import * as path from "path";
 import { Grid, Paper } from "@mui/material";
+import { createBrowserHistory } from "history";
 
 import { FilesStore, SettingsStore } from "../Store";
+import { NotificationType, useNotifications, NotificationAction } from "../Notifications";
 
 import "./editor.css";
 
@@ -50,6 +52,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
     const [selection, setSelection] = React.useState<monaco.ISelection | null>(null);
     const [lineDecorations, setLineDecorations] = React.useState<string[]>([]);
     const [markers, setMarkers] = React.useState<monaco.editor.IMarker[]>([]);
+    const parserTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const monacoEditorRef = React.useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
     const editorRef = React.useRef<HTMLDivElement | null>(null);
@@ -62,6 +65,8 @@ export const Editor: React.FC<EditorProps> = (props) => {
     const timeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const theme = useTheme();
+
+    const notifications = useNotifications();
 
     const fontSizes = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2];
 
@@ -177,10 +182,15 @@ export const Editor: React.FC<EditorProps> = (props) => {
         }
         const model = monacoEditorRef.current?.getModel();
         if (model) {
-            store.dispatch({
-                type: FilesStore.StoreActions.UpdateCurrentContent,
-                payload: { content: model.getValue(), source: FilesStore.UpdateSource.Editor },
-            });
+            if (parserTimer.current) {
+                clearTimeout(parserTimer.current);
+            }
+            parserTimer.current = setTimeout(() => {
+                store.dispatch({
+                    type: FilesStore.StoreActions.UpdateCurrentContent,
+                    payload: { content: model.getValue(), source: FilesStore.UpdateSource.Editor },
+                });
+            }, 2000);
         }
     };
 
@@ -218,7 +228,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                 model.setValue(store.state.currentEditorContent);
             }
         }
-    }, [store.state.currentEditorContent]);
+    }, [store.state.currentEditorContent, store.state.updateSource]);
 
     React.useEffect(() => {
         const file = store.state.files.find((el) => el.uuid === store.state.activeFileUuid);
@@ -238,26 +248,46 @@ export const Editor: React.FC<EditorProps> = (props) => {
 
     const handleEditorWillMount: EditorWillMount = (monaco) => {
         let jsonSchema = undefined;
-        try {
-            jsonSchema = preprocessJsonSchema("/home/ruben/.local/share/webviz/webviz_schema.json");
-        } catch (e) {
-            console.log("Error");
-        }
-
-        setDiagnosticsOptions({
-            validate: true,
-            enableSchemaRequest: true,
-            hover: true,
-            format: true,
-            completion: true,
-            schemas: [
-                {
-                    fileMatch: ["*"],
-                    schema: jsonSchema,
-                    uri: `file://${settingsStore.state.settings.find((el) => el.id === "schema")?.value || ""}`,
+        const schema = settingsStore.state.settings.find((el) => el.id === "schema");
+        if (schema && schema.value !== "") {
+            try {
+                jsonSchema = preprocessJsonSchema(schema.value as string);
+            } catch (e) {
+                notifications.appendNotification({
+                    type: NotificationType.ERROR,
+                    message: "Invalid JSON schema defined.",
+                    action: {
+                        label: "Change",
+                        action: () => createBrowserHistory().push("/settings"),
+                    },
+                });
+                return;
+            }
+            setDiagnosticsOptions({
+                validate: true,
+                enableSchemaRequest: true,
+                hover: true,
+                format: true,
+                completion: true,
+                schemas: [
+                    {
+                        fileMatch: ["*"],
+                        schema: jsonSchema,
+                        uri: `file://${schema.value || ""}`,
+                    },
+                ],
+            });
+        } else {
+            notifications.appendNotification({
+                type: NotificationType.ERROR,
+                message: "No Webviz JSON schema defined. Select a schema in settings.",
+                action: {
+                    label: "Settings",
+                    action: () => (window.location.href = "/settings"),
                 },
-            ],
-        });
+            });
+            return;
+        }
     };
 
     const handleNewFileClick = () => {

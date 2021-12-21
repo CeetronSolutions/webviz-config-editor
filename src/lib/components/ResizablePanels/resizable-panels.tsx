@@ -28,9 +28,9 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = (props) => {
     const store = ConfigStore.useStore();
 
     React.useEffect(() => {
-        const storedSizes = store.state.config.find((el) => el.id === props.id);
-        if (storedSizes && storedSizes.config.length === props.children.length) {
-            setSizes(storedSizes.config as number[]);
+        const storedSizes = store.state.config.find((el) => el.id === props.id)?.config as number[] | undefined;
+        if (storedSizes && storedSizes.length === props.children.length) {
+            setSizes(storedSizes as number[]);
             return;
         }
         const sizes: number[] = [];

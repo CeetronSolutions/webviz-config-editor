@@ -4,7 +4,6 @@
     height: 100%;
     align-items: stretch;
     overflow: auto;
-    cursor: pointer;
 }
 
 .LivePreview__Title {
@@ -26,6 +25,7 @@
 .LivePreview__MenuWrapper {
     position: absolute;
     user-select: none;
+    margin-top: 1px;
 }
 
 .LivePreview__Page {

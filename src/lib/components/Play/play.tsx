@@ -1,11 +1,11 @@
 import React from "react";
 import { PythonShell, Options } from "python-shell";
 import * as path from "path";
-import { CircularProgress } from "@mui/material";
+import { CircularProgress, Typography } from "@mui/material";
 
 import { FilesStore, SettingsStore } from "../Store";
 import { useNotifications, NotificationType } from "../Notifications";
-import { OpenInBrowser } from "@mui/icons-material";
+import { OpenInBrowser, Error } from "@mui/icons-material";
 
 import "./play.css";
 
@@ -67,6 +67,7 @@ export const Play: React.FC = () => {
                         }
                     } else {
                         setLoading(true);
+                        setHasError(true);
                     }
                 })
                 .catch(() => setLoading(true));
@@ -75,6 +76,11 @@ export const Play: React.FC = () => {
     };
 
     React.useEffect(() => {
+        const pythonInterpreter = store.state.settings.find(setting => setting.id === "python-interpreter");
+        if (!pythonInterpreter || pythonInterpreter.value === "") {
+            setHasError(true);
+            return;
+        }
         const pythonShell = buildWebviz();
 
         return () => {
@@ -86,12 +92,17 @@ export const Play: React.FC = () => {
 
     return (
         <div className="Play">
+            {hasError && (<>
+                <h1><Error /></h1>
+                An error occurred.
+                </>
+            )}
             {loading && <CircularProgress />}
-            {!loading && (
+            {!loading && !hasError && (
                 <>
                     <OpenInBrowser fontSize="large" color="action" />
                     <br />
-                    <h4>Please wait until the browser window opens.</h4>
+                    <Typography variant="h4">Please wait until the browser window opens.</Typography>
                 </>
             )}
         </div>

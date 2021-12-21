@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
-import { Tabs, Tab, Paper } from "@mui/material";
+import { Tabs, Tab, Paper, Tooltip } from "@mui/material";
 import { Edit, PlayArrow, Settings } from "@mui/icons-material";
 import { useTheme } from "@mui/material";
 import path from "path";
@@ -52,21 +52,33 @@ export const MainWindow: React.FC<MainWindowProps> = (props) => {
                             render={(history) => (
                                 <Tabs orientation="vertical" value={history.location.pathname} color="inherit">
                                     <Tab
-                                        icon={<Edit color="inherit" />}
+                                        icon={
+                                            <Tooltip title="Config File Editor" placement="right" arrow>
+                                                <Edit color="inherit" />
+                                            </Tooltip>
+                                        }
                                         value={routes[0]}
                                         className="MenuTab"
                                         component={Link}
                                         to={routes[0]}
                                     />
                                     <Tab
-                                        icon={<PlayArrow color="inherit" />}
+                                        icon={
+                                            <Tooltip title="Run Webviz Application" placement="right" arrow>
+                                                <PlayArrow color="inherit" />
+                                            </Tooltip>
+                                        }
                                         value={routes[1]}
                                         className="MenuTab"
                                         component={Link}
                                         to={routes[1]}
                                     />
                                     <Tab
-                                        icon={<Settings color="inherit" />}
+                                        icon={
+                                            <Tooltip title="Preferences" placement="right" arrow>
+                                                <Settings color="inherit" />
+                                            </Tooltip>
+                                        }
                                         value={routes[2]}
                                         className="MenuTab"
                                         component={Link}

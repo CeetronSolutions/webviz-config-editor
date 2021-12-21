@@ -54,15 +54,15 @@ export const LivePreview: React.FC<LivePreviewProps> = (props) => {
             return;
         }
 
-        setTitle(store.state.yamlParser.getTitle());
-        setNavigationItems(store.state.yamlParser.getNavigationItems());
-    }, [store.state.currentYamlObjects, store.state.updateSource]);
+        setTitle(store.state.title);
+        setNavigationItems(store.state.navigationItems);
+    }, [store.state.currentYamlObjects, store.state.updateSource, store.state.title, store.state.navigationItems]);
 
     React.useEffect(() => {
         if (store.state.updateSource === UpdateSource.Plugin) {
             return;
         }
-        const object = store.state.yamlParser.getObjectById(store.state.currentPageId);
+        const object: LayoutObject | undefined = store.state.selectedYamlObject as LayoutObject | undefined;
         setCurrentPageContent((object?.children as LayoutObject[]) || []);
     }, [store.state.currentPageId, store.state.updateSource]);
 
