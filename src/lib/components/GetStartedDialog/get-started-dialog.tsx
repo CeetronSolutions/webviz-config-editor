@@ -16,6 +16,16 @@ import { SettingsStore, ConfigStore } from "../Store";
 import { Settings, SettingMeta } from "../../utils/settings";
 import { PreferenceItem } from "../Preferences/components/preference-item";
 
+import "./get-started-dialog.css";
+
+const getSettingsFlat = (): SettingMeta[] => {
+    var settings: SettingMeta[] = [];
+    Object.keys(Settings).forEach((category) => {
+        settings = settings.concat(Settings[category].filter((el) => el.needsInitialization));
+    });
+    return settings;
+};
+
 export const GetStartedDialog: React.FC = () => {
     const settingsStore = SettingsStore.useStore();
     const configStore = ConfigStore.useStore();
@@ -29,10 +39,27 @@ export const GetStartedDialog: React.FC = () => {
         if (!initialized) {
             setOpen(true);
         }
-    }, [configStore.state]);
+    }, []);
 
     const handleClose = () => {
         setOpen(false);
+        if (activeStep === getSettingsFlat().length + 1) {
+            configStore.dispatch({
+                type: ConfigStore.StoreActions.SetConfig,
+                payload: {
+                    config: {
+                        id: "initialized",
+                        config: true,
+                    },
+                },
+            });
+        }
+    };
+
+    const isCurrentSettingValid = (): boolean => {
+        const settings = getSettingsFlat();
+        const currentSetting = settings[activeStep - 1];
+        return settingsStore.state.settings.find((el) => el.id === currentSetting.id)?.value !== "";
     };
 
     const handleNext = () => {
@@ -44,10 +71,7 @@ export const GetStartedDialog: React.FC = () => {
     };
 
     const makeStep = (step: number): React.ReactNode => {
-        var settings: SettingMeta[] = [];
-        Object.keys(Settings).forEach((category) => {
-            settings = settings.concat(Settings[category].filter((el) => el.needsInitialization));
-        });
+        const settings = getSettingsFlat();
         if (step === 0) {
             return (
                 <div style={{ textAlign: "center" }}>
@@ -58,13 +82,27 @@ export const GetStartedDialog: React.FC = () => {
                     <Typography gutterBottom variant="h4">
                         Webviz Config Editor
                     </Typography>
-                    <Typography gutterBottom variant="body1">
+                    <Typography gutterBottom variant="body2">
                         Get quickly started by setting some preferences.
                     </Typography>
                 </div>
             );
+        } else if (step === settings.length + 1) {
+            return (
+                <div style={{ textAlign: "center" }}>
+                    <div className="wrapper">
+                        <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                            <circle className="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
+                            <path className="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                        </svg>
+                    </div>
+                    <Typography gutterBottom variant="body2">
+                        You are all set!
+                    </Typography>
+                </div>
+            );
         } else {
-            return <PreferenceItem key={settings[step].id} {...settings[step]} />;
+            return <PreferenceItem key={settings[step - 1].id} {...settings[step - 1]} />;
         }
     };
 
@@ -87,25 +125,49 @@ export const GetStartedDialog: React.FC = () => {
                 </DialogTitle>
                 <DialogContent>{makeStep(activeStep)}</DialogContent>
                 <DialogActions>
-                    <MobileStepper
-                        variant="progress"
-                        steps={6}
-                        position="static"
-                        activeStep={activeStep}
-                        sx={{ maxWidth: 400, flexGrow: 1 }}
-                        nextButton={
-                            <Button size="small" onClick={handleNext} disabled={activeStep === 5}>
-                                Next
+                    {activeStep === 0 && (
+                        <>
+                            <Button size="small" onClick={handleClose}>
+                                I'll do it later
+                            </Button>
+                            <Button size="small" onClick={handleNext}>
+                                Set preferences now
                                 {theme.direction === "rtl" ? <KeyboardArrowLeft /> : <KeyboardArrowRight />}
                             </Button>
-                        }
-                        backButton={
-                            <Button size="small" onClick={handleBack} disabled={activeStep === 0}>
-                                {theme.direction === "rtl" ? <KeyboardArrowRight /> : <KeyboardArrowLeft />}
-                                Back
+                        </>
+                    )}
+                    {activeStep === getSettingsFlat().length + 1 && (
+                        <>
+                            <Button size="small" onClick={handleClose}>
+                                Perfect
                             </Button>
-                        }
-                    />
+                        </>
+                    )}
+                    {activeStep > 0 && activeStep <= getSettingsFlat().length && (
+                        <MobileStepper
+                            variant="progress"
+                            steps={getSettingsFlat().length + 2}
+                            position="static"
+                            activeStep={activeStep}
+                            sx={{ maxWidth: 400, flexGrow: 1 }}
+                            nextButton={
+                                <Button
+                                    size="small"
+                                    onClick={handleNext}
+                                    disabled={activeStep === 5 || !isCurrentSettingValid()}
+                                >
+                                    Next
+                                    {theme.direction === "rtl" ? <KeyboardArrowLeft /> : <KeyboardArrowRight />}
+                                </Button>
+                            }
+                            backButton={
+                                <Button size="small" onClick={handleBack} disabled={activeStep === 0}>
+                                    {theme.direction === "rtl" ? <KeyboardArrowRight /> : <KeyboardArrowLeft />}
+                                    Back
+                                </Button>
+                            }
+                        />
+                    )}
                 </DialogActions>
             </Dialog>
         </div>

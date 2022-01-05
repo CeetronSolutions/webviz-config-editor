@@ -20,6 +20,10 @@ import {
     YamlParserWorkerResponseData,
 } from "../../../types/yaml-parser-worker";
 
+// @ts-ignore
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import Worker from "worker-loader!../../../utils/parser-worker";
+
 type ActionMap<
     M extends {
         [index: string]: {
@@ -166,7 +170,7 @@ const initialState: StoreState = {
     currentYamlObjects: [],
     selectedYamlObject: undefined,
     updateSource: UpdateSource.Editor,
-    yamlParserWorker: new Worker("../../utils/parser-worker.js"),
+    yamlParserWorker: new Worker(),
     currentPageId: "",
     recentDocuments: [],
 };

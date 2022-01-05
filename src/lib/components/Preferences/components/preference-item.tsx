@@ -11,6 +11,8 @@ import {
     Button,
     MenuItem,
     Grid,
+    FormControl,
+    FormHelperText,
 } from "@mui/material";
 import * as fs from "fs";
 import { execSync } from "child_process";
@@ -154,7 +156,13 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                     try {
                         fs.accessSync(localValue as string, fs.constants.X_OK);
                         try {
-                            execSync(`${localValue as string} -c "import sys; print(sys.path)"`);
+                            const regExp = new RegExp("\\[('[a-zA-Z0-9\\.\\-_/\\\\]{0,}'(, )?)+\\]");
+                            const response = execSync(
+                                `${localValue as string} -c "import sys; print(sys.path)"`
+                            ).toString();
+                            if (!regExp.test(response)) {
+                                throw "Invalid Python interpreter";
+                            }
                             setState({ state: PreferenceItemState.VALID, message: "" });
                             store.dispatch({
                                 type: SettingsStore.StoreActions.SetSetting,
@@ -229,23 +237,31 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                     />
                 )}
                 {props.type === "pythonInterpreter" && (
-                    <>
+                    <FormControl error={state.state === PreferenceItemState.INVALID}>
                         {loadingState === PreferenceItemLoadingState.LOADING && <CircularProgress />}
                         {loadingState === PreferenceItemLoadingState.LOADED && (
-                            <Select
-                                value={localValue as string | number | boolean}
-                                onChange={(e) => handleValueChanged(e.target.value)}
-                                className="PreferenceInput"
-                                displayEmpty
-                            >
-                                {options.map((option) => (
-                                    <MenuItem value={option}>{option}</MenuItem>
-                                ))}
-                                {!options.includes(localValue as string) && (
-                                    <MenuItem value={localValue as string}>{localValue}</MenuItem>
+                            <>
+                                <Select
+                                    value={localValue as string | number | boolean}
+                                    onChange={(e) => handleValueChanged(e.target.value)}
+                                    className="PreferenceInput"
+                                    displayEmpty
+                                    renderValue={(value: string | number | boolean) =>
+                                        value === "" ? <i>Please select...</i> : value
+                                    }
+                                >
+                                    {options.map((option) => (
+                                        <MenuItem value={option}>{option}</MenuItem>
+                                    ))}
+                                    {!options.includes(localValue as string) && (
+                                        <MenuItem value={localValue as string}>{localValue}</MenuItem>
+                                    )}
+                                    <MenuItem value="custom">Select from system...</MenuItem>
+                                </Select>
+                                {state.state === PreferenceItemState.INVALID && (
+                                    <FormHelperText>{state.message}</FormHelperText>
                                 )}
-                                <MenuItem value="custom">Select from system...</MenuItem>
-                            </Select>
+                            </>
                         )}
                         <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
                             <DialogTitle>Path to Python Interpreter</DialogTitle>
@@ -286,7 +302,7 @@ export const PreferenceItem: React.FC<SettingMeta> = (props) => {
                                 </Button>
                             </DialogActions>
                         </Dialog>
-                    </>
+                    </FormControl>
                 )}
                 {props.type === "theme" && (
                     <>

@@ -12,6 +12,7 @@ const yamlParser = new YamlParser();
 
 if (parentPort) {
     parentPort.on("message", (data: YamlParserWorkerRequestData) => {
+        console.log(data);
         if (parentPort) {
             switch (data.type) {
                 case YamlParserWorkerRequestType.Parse:

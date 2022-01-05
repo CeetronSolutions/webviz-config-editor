@@ -1,3 +1,5 @@
+import React from "react";
+
 export interface Setting {
     id: string;
     value: string | number | boolean;
@@ -11,7 +13,7 @@ export type FileFilter = {
 export interface SettingMeta {
     id: string;
     label: string;
-    description: string;
+    description: React.ReactNode | string;
     type: "string" | "number" | "file" | "pythonInterpreter" | "theme";
     defaultValue: string | number | boolean;
     fileFilter?: FileFilter[];
@@ -22,8 +24,8 @@ export const Settings: { [key: string]: SettingMeta[] } = {
     Python: [
         {
             id: "python-interpreter",
-            label: "Interpreter",
-            description: "Select the interpreter that you are using with Webviz.",
+            label: "Python Interpreter",
+            description: "Select the Python interpreter that you are using with Webviz.",
             type: "pythonInterpreter",
             defaultValue: "",
             needsInitialization: true,
@@ -33,7 +35,15 @@ export const Settings: { [key: string]: SettingMeta[] } = {
         {
             id: "schema",
             label: "Webviz Schema",
-            description: "Select the Webviz schema file.",
+            description: (
+                <>
+                    Select the Webviz schema file. Read&nbsp;
+                    <a href="https://equinor.github.io/webviz-config/#/?id=yaml-schema" target="blank">
+                        here
+                    </a>{" "}
+                    how to create a schemafile.
+                </>
+            ),
             type: "file",
             defaultValue: "",
             fileFilter: [
