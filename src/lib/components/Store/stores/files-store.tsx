@@ -14,15 +14,7 @@ import { PropertyNavigationType } from "@webviz/core-components/dist/components/
 import { File } from "../../../types/file";
 import { LogEntry, LogEntryType } from "../../../types/log";
 import { YamlObject, YamlMetaObject, LayoutObject } from "../../../utils/yaml-parser";
-import {
-    YamlParserWorkerRequestType,
-    YamlParserWorkerResponseType,
-    YamlParserWorkerResponseData,
-} from "../../../types/yaml-parser-worker";
-
-// @ts-ignore
-// eslint-disable-next-line import/no-webpack-loader-syntax
-import Worker from "worker-loader!../../../utils/parser-worker";
+import { YamlParserWorkerRequestType, YamlParserWorkerResponseType } from "../../../types/yaml-parser-worker";
 
 type ActionMap<
     M extends {
@@ -170,7 +162,7 @@ const initialState: StoreState = {
     currentYamlObjects: [],
     selectedYamlObject: undefined,
     updateSource: UpdateSource.Editor,
-    yamlParserWorker: new Worker(),
+    yamlParserWorker: new Worker("../../../workers/parser.worker.js", { type: "module" }),
     currentPageId: "",
     recentDocuments: [],
 };
@@ -527,45 +519,43 @@ export const StoreProvider: React.FC = (props) => {
     const notifications = useNotifications();
 
     React.useEffect(() => {
-        if (state.yamlParserWorker.onmessage) {
-            state.yamlParserWorker.onmessage = (e: MessageEvent) => {
-                const data = e.data;
-                switch (data.type) {
-                    case YamlParserWorkerResponseType.Parsed:
-                        dispatch({
-                            type: StoreActions.SetCurrentObjects,
-                            payload: {
-                                currentObjects: data.objects,
-                                title: data.title,
-                                navigationItems: data.navigationItems,
-                            },
-                        });
-                        break;
-                    case YamlParserWorkerResponseType.ParsedAndSetSelection:
-                        dispatch({
-                            type: StoreActions.SetCurrentObjectsAndSelection,
-                            payload: {
-                                currentObjects: data.objects,
-                                selectedObject: data.selectedObject,
-                                page: data.page,
-                            },
-                        });
-                        break;
-                    case YamlParserWorkerResponseType.ClosestObject:
-                        dispatch({
-                            type: StoreActions.SetSelectedObject,
-                            payload: { object: data.object, page: data.page },
-                        });
-                        break;
-                    case YamlParserWorkerResponseType.ObjectById:
-                        dispatch({
-                            type: StoreActions.SetSelectedObject,
-                            payload: { object: data.object, page: data.object as LayoutObject },
-                        });
-                        break;
-                }
-            };
-        }
+        state.yamlParserWorker.onmessage = (e: MessageEvent) => {
+            const data = e.data;
+            switch (data.type) {
+                case YamlParserWorkerResponseType.Parsed:
+                    dispatch({
+                        type: StoreActions.SetCurrentObjects,
+                        payload: {
+                            currentObjects: data.objects,
+                            title: data.title,
+                            navigationItems: data.navigationItems,
+                        },
+                    });
+                    break;
+                case YamlParserWorkerResponseType.ParsedAndSetSelection:
+                    dispatch({
+                        type: StoreActions.SetCurrentObjectsAndSelection,
+                        payload: {
+                            currentObjects: data.objects,
+                            selectedObject: data.selectedObject,
+                            page: data.page,
+                        },
+                    });
+                    break;
+                case YamlParserWorkerResponseType.ClosestObject:
+                    dispatch({
+                        type: StoreActions.SetSelectedObject,
+                        payload: { object: data.object, page: data.page },
+                    });
+                    break;
+                case YamlParserWorkerResponseType.ObjectById:
+                    dispatch({
+                        type: StoreActions.SetSelectedObject,
+                        payload: { object: data.object, page: data.object as LayoutObject },
+                    });
+                    break;
+            }
+        };
     }, [state.yamlParserWorker]);
 
     React.useEffect(() => {

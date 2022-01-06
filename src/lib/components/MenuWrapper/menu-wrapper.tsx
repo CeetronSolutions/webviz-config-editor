@@ -13,7 +13,7 @@ type MenuWrapperProps = MenuProps & {
 
 export const MenuWrapper: React.FC<MenuWrapperProps> = (props) => {
     const menuWrapperRef = React.useRef<HTMLDivElement | null>(null);
-    const [visible, setVisible] = React.useState<boolean>(false);
+    const [visible, setVisible] = React.useState<boolean>(true);
     const [width, setWidth] = React.useState<number>(0);
 
     const theme = useTheme();
@@ -102,7 +102,9 @@ export const MenuWrapper: React.FC<MenuWrapperProps> = (props) => {
                     const bodyMargins = { left: 0, top: 0, right: 0, bottom: 0 };
                     menu.style.position = "absolute";
                     menu.style.backgroundColor = theme.palette.background.paper;
-                    menu.style.height = menuWrapperRef.current.getBoundingClientRect().height + "px";
+                    menu.style.height = menuWrapperRef.current.getBoundingClientRect().height - 1 + "px";
+                    menuWrapperRef.current.style.height =
+                        menuWrapperRef.current.getBoundingClientRect().height - 1 + "px";
                     document.body.style.marginLeft = bodyMargins.left + "px";
                     document.body.style.marginTop = bodyMargins.top + "px";
                     document.body.style.marginRight = bodyMargins.right + "px";

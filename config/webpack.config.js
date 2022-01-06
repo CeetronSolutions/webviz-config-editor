@@ -25,6 +25,7 @@ const ForkTsCheckerWebpackPlugin = require("react-dev-utils/ForkTsCheckerWebpack
 const typescriptFormatter = require("react-dev-utils/typescriptFormatter");
 const ReactRefreshWebpackPlugin = require("@pmmmwh/react-refresh-webpack-plugin");
 const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
+const WorkerPlugin = require("worker-plugin");
 
 const postcssNormalize = require("postcss-normalize");
 
@@ -527,6 +528,7 @@ module.exports = function (webpackEnv) {
             ],
         },
         plugins: [
+            new WorkerPlugin(),
             new MonacoWebpackPlugin({
                 // available options are documented at https://github.com/Microsoft/monaco-editor-webpack-plugin#options
                 languages: ["yaml"],

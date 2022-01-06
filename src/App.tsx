@@ -18,7 +18,6 @@ import { GetStartedDialog } from "./lib/components/GetStartedDialog";
 export const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 function App(): JSX.Element {
-    console.log(process.versions.v8);
     const [mode, setMode] = React.useState<"light" | "dark">(
         useMediaQuery("(prefers-color-scheme: dark)") ? "dark" : "light"
     );
