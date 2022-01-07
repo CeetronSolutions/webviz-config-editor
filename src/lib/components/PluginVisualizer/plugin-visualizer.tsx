@@ -30,6 +30,7 @@ import {
     QuestionMark,
 } from "@mui/icons-material";
 import ReactTagInput from "@pathofdev/react-tag-input";
+import ReactMarkdown from "react-markdown";
 import "@pathofdev/react-tag-input/build/index.css";
 import { Plugin } from "../../utils/plugin-parser";
 import { PreviewMode } from "../LivePreview/live-preview";
@@ -369,7 +370,9 @@ export const PluginVisualizer: React.FC<PluginVisualizerType> = (props) => {
             return (
                 <>
                     <h3>{data.name}</h3>
-                    <span className="PluginDescription">{plugin?.description || ""}</span>
+                    <span className="PluginDescription">
+                        <ReactMarkdown>{plugin?.description || ""}</ReactMarkdown>
+                    </span>
                     <List>
                         {plugin.properties &&
                             Object.entries(plugin.properties).map(([key, value], index) =>

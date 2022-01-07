@@ -1,7 +1,7 @@
 import React from "react";
 import { PythonShell, Options } from "python-shell";
 import * as path from "path";
-import { CircularProgress, Typography } from "@mui/material";
+import { CircularProgress, Typography, useTheme, Grid } from "@mui/material";
 
 import { FilesStore, SettingsStore } from "../Store";
 import { useNotifications, NotificationType } from "../Notifications";
@@ -18,6 +18,8 @@ export const Play: React.FC = () => {
     const [hasError, setHasError] = React.useState<boolean>(false);
     const [loading, setLoading] = React.useState<boolean>(true);
     const interval = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const theme = useTheme();
 
     const buildWebviz = () => {
         const args = [
@@ -76,7 +78,7 @@ export const Play: React.FC = () => {
     };
 
     React.useEffect(() => {
-        const pythonInterpreter = store.state.settings.find(setting => setting.id === "python-interpreter");
+        const pythonInterpreter = store.state.settings.find((setting) => setting.id === "python-interpreter");
         if (!pythonInterpreter || pythonInterpreter.value === "") {
             setHasError(true);
             return;
@@ -92,19 +94,44 @@ export const Play: React.FC = () => {
 
     return (
         <div className="Play">
-            {hasError && (<>
-                <h1><Error /></h1>
-                An error occurred.
-                </>
-            )}
-            {loading && <CircularProgress />}
-            {!loading && !hasError && (
-                <>
-                    <OpenInBrowser fontSize="large" color="action" />
-                    <br />
-                    <Typography variant="h4">Please wait until the browser window opens.</Typography>
-                </>
-            )}
+            <Grid container direction="column" justifyContent="center" alignItems="center" spacing={2}>
+                {hasError && (
+                    <>
+                        <Grid item>
+                            <Error fontSize="large" color="action" />
+                        </Grid>
+                        <Grid item>
+                            <Typography variant="body1" color={theme.palette.text.primary}>
+                                An error occurred.
+                            </Typography>
+                        </Grid>
+                    </>
+                )}
+                {loading && (
+                    <>
+                        <Grid item>
+                            <CircularProgress />
+                        </Grid>
+                        <Grid item>
+                            <Typography variant="body1" color={theme.palette.text.primary}>
+                                Building the Webviz dashboard...
+                            </Typography>
+                        </Grid>
+                    </>
+                )}
+                {!loading && !hasError && (
+                    <>
+                        <Grid item>
+                            <OpenInBrowser fontSize="large" color="action" />
+                        </Grid>
+                        <Grid item>
+                            <Typography variant="body1" color={theme.palette.text.primary}>
+                                Please wait for the browser window to open.
+                            </Typography>
+                        </Grid>
+                    </>
+                )}
+            </Grid>
         </div>
     );
 };

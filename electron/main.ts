@@ -243,9 +243,6 @@ function createMenu() {
         {
             label: "Edit",
             submenu: [
-                { role: "undo" },
-                { role: "redo" },
-                { type: "separator" },
                 { role: "cut" },
                 { role: "copy" },
                 { role: "paste" },
@@ -296,7 +293,7 @@ function createMenu() {
                     label: "Learn More",
                     click: async () => {
                         const { shell } = require("electron");
-                        await shell.openExternal("https://electronjs.org");
+                        await shell.openExternal("https://equinor.github.io/webviz-subsurface");
                     },
                 },
             ],

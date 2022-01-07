@@ -556,6 +556,9 @@ export const StoreProvider: React.FC = (props) => {
                     break;
             }
         };
+        return () => {
+            state.yamlParserWorker.terminate();
+        };
     }, [state.yamlParserWorker]);
 
     React.useEffect(() => {

@@ -12,6 +12,7 @@
     text-align: center;
     padding: 8px;
     display: block;
+    font-weight: bolder;
 }
 
 .LivePreview__Content {

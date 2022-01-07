@@ -117,13 +117,15 @@
         "test": "node scripts/test.js"
     },
     "build": {
+        "appId": "com.electron.webviz-config-editor",
         "extends": null,
         "files": [
             "build/**/*"
         ],
         "directories": {
-            "buildResources": "assets"
-        }
+            "buildResources": "build"
+        },
+        "asar": false
     },
     "eslintConfig": {
         "extends": [

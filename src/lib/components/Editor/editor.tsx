@@ -1,7 +1,7 @@
 import React from "react";
 import MonacoEditor, { monaco, EditorDidMount, EditorWillMount } from "react-monaco-editor";
 import useSize from "@react-hook/size";
-import { editor, Environment } from "monaco-editor/esm/vs/editor/editor.api";
+import { Environment } from "monaco-editor/esm/vs/editor/editor.api";
 import { setDiagnosticsOptions } from "monaco-yaml";
 import { ipcRenderer } from "electron";
 import * as path from "path";
@@ -9,7 +9,9 @@ import { Grid, Paper } from "@mui/material";
 import { createBrowserHistory } from "history";
 
 import { FilesStore, SettingsStore } from "../Store";
-import { NotificationType, useNotifications, NotificationAction } from "../Notifications";
+import { NotificationType, useNotifications } from "../Notifications";
+
+import { uuid } from "uuidv4";
 
 import "./editor.css";
 
@@ -173,7 +175,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                 payload: { uuid: uuid, viewState: monacoEditorRef.current.saveViewState() },
             });
         }
-        handleMarkersChange();
+        setTimeout(handleMarkersChange, 2000);
     };
 
     const handleEditorValueChange = (e: monaco.editor.IModelContentChangedEvent) => {
@@ -190,7 +192,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                     type: FilesStore.StoreActions.UpdateCurrentContent,
                     payload: { content: model.getValue(), source: FilesStore.UpdateSource.Editor },
                 });
-            }, 2000);
+            }, 200);
         }
     };
 
@@ -198,11 +200,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
         if (!monacoRef.current || !monacoEditorRef.current) {
             return;
         }
-        setMarkers(
-            monacoRef.current.editor
-                .getModelMarkers({})
-                .filter((el) => el.resource.fsPath === monacoEditorRef.current?.getModel()?.uri.path || "")
-        );
+        setMarkers(monacoRef.current.editor.getModelMarkers({ resource: monacoEditorRef.current.getModel()?.uri }));
     };
 
     const handleEditorDidMount: EditorDidMount = (editor, monaco) => {
@@ -371,7 +369,7 @@ export const Editor: React.FC<EditorProps> = (props) => {
                     </Paper>
                     <div className="IssuesContent">
                         {markers.map((marker) => (
-                            <div className="Issue" onClick={() => selectMarker(marker)} key={makeIssueKey(marker)}>
+                            <div className="Issue" onClick={() => selectMarker(marker)} key={uuid()}>
                                 {marker.severity === monaco.MarkerSeverity.Error ? (
                                     <ErrorIcon color="error" fontSize="small" />
                                 ) : marker.severity === monaco.MarkerSeverity.Warning ? (
