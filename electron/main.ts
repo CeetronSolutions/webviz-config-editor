@@ -172,6 +172,13 @@ const openApplication = async () => {
     ElectronStore.initRenderer();
     createWindow();
 
+    if (process.argv.length > 0) {
+        const window = BrowserWindow.getFocusedWindow();
+        if (window) {
+            window.webContents.send("file-opened", [process.argv[0]]);
+        }
+    }
+
     app.on("window-all-closed", () => {
         if (process.platform !== "darwin") {
             app.quit();
